@@ -121,6 +121,7 @@ export function VisualEditorPage({ initialArchitecture }: VisualEditorPageProps)
         position: service.position,
         data: {
           label: formatNodeLabel(service.name, ServiceIcon),
+          name: service.name, // Store actual name as string
           serviceType: service.type,
           configuration: service.configuration,
         },
@@ -251,6 +252,7 @@ export function VisualEditorPage({ initialArchitecture }: VisualEditorPageProps)
         position,
         data: {
           label: formatNodeLabel(serviceType, ServiceIcon),
+          name: serviceType, // Store actual name as string
           serviceType: serviceType,
           configuration: {},
         },
@@ -297,7 +299,20 @@ export function VisualEditorPage({ initialArchitecture }: VisualEditorPageProps)
   const updateNodeName = useCallback(
     (nodeId: string, name: string) => {
       setNodes((nds) =>
-        nds.map((n) => (n.id === nodeId ? { ...n, data: { ...n.data, label: name } } : n))
+        nds.map((n) => {
+          if (n.id === nodeId) {
+            const ServiceIcon = getServiceIcon(n.data.serviceType as string)
+            return {
+              ...n,
+              data: {
+                ...n.data,
+                label: formatNodeLabel(name, ServiceIcon),
+                name: name, // Update string name for display/export
+              },
+            }
+          }
+          return n
+        })
       )
     },
     [setNodes]
@@ -317,7 +332,7 @@ export function VisualEditorPage({ initialArchitecture }: VisualEditorPageProps)
     const services: AWSService[] = nodes.map((node) => ({
       id: node.id,
       type: node.data.serviceType as string,
-      name: node.data.label as string,
+      name: node.data.name as string, // Use string name, not React component
       configuration: node.data.configuration as Record<string, unknown>,
       position: node.position,
     }))

@@ -394,7 +394,7 @@ export function ServiceConfigForm({ node, onConfigChange, onNameChange }: Servic
         <label>Display Name</label>
         <input
           type="text"
-          value={node.data.label as string}
+          value={(node.data.name as string) || ''}
           onChange={(e) => onNameChange(node.id, e.target.value)}
           placeholder="Enter service name"
         />
