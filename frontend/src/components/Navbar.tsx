@@ -37,6 +37,14 @@ export function Navbar() {
           </div>
 
           <div className="navbar-menu">
+            <div className="navbar-links">
+              <button className="nav-link" onClick={() => navigate('/generate')}>
+                Generate
+              </button>
+              <button className="nav-link" onClick={() => navigate('/editor')}>
+                Visual Editor
+              </button>
+            </div>
             <div className="navbar-user">
               <span className="user-email">{user?.email || 'User'}</span>
               <button

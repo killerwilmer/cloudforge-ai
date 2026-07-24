@@ -29,6 +29,34 @@
   gap: 1.5rem;
 }
 
+.navbar-links {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.nav-link {
+  padding: 0.6rem 1.2rem;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  color: white;
+  font-size: 0.9rem;
+  font-weight: 600;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  backdrop-filter: blur(10px);
+}
+
+.nav-link:hover {
+  background: rgba(255, 255, 255, 0.2);
+  border-color: white;
+  transform: translateY(-2px);
+}
+
+.nav-link:active {
+  transform: translateY(0);
+}
+
 .navbar-user {
   display: flex;
   align-items: center;
@@ -164,17 +192,27 @@
 @media (max-width: 768px) {
   .navbar-container {
     padding: 1rem;
+    flex-direction: column;
+    gap: 1rem;
   }
 
   .navbar-brand h1 {
     font-size: 1.2rem;
   }
 
-  .user-email {
-    display: none;
+  .navbar-menu {
+    width: 100%;
+    justify-content: space-between;
+    flex-wrap: wrap;
   }
 
-  .navbar-menu {
-    gap: 0.5rem;
+  .navbar-links {
+    order: 3;
+    width: 100%;
+    justify-content: center;
+  }
+
+  .user-email {
+    display: none;
   }
 }
