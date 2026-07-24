@@ -1,5 +1,6 @@
 import { API_CONFIG } from '@/config'
 import type { Architecture } from '@/types'
+import { handleApiResponse } from '@/utils/api-interceptor'
 
 export interface GenerateArchitectureRequest {
   description: string
