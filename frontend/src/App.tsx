@@ -3,6 +3,8 @@ import { ArchitectureProvider } from '@/contexts/ArchitectureContext'
 import { AuthProvider } from '@/contexts/AuthContext'
 import { AuthPage } from '@/pages/AuthPage'
 import { AWSConnectionPage } from '@/pages/AWSConnectionPage'
+import { DeploymentHistoryPage } from '@/pages/DeploymentHistoryPage'
+import { DeploymentStatusPage } from '@/pages/DeploymentStatusPage'
 import { GenerateArchitecturePage } from '@/pages/GenerateArchitecturePage'
 import { LandingPage } from '@/pages/LandingPage'
 import { VisualEditorPage } from '@/pages/VisualEditorPage'
@@ -41,6 +43,22 @@ function App() {
               element={
                 <ProtectedRoute>
                   <AWSConnectionPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/deployments"
+              element={
+                <ProtectedRoute>
+                  <DeploymentHistoryPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/deployments/:deploymentId"
+              element={
+                <ProtectedRoute>
+                  <DeploymentStatusPage />
                 </ProtectedRoute>
               }
             />
