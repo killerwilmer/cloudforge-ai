@@ -26,6 +26,11 @@ out/
 *.d.ts
 *.js.map
 
+# Compiled JavaScript from TypeScript (backend)
+backend/**/*.js
+!backend/scripts/**/*.js
+!backend/jest.config.js
+
 # IDE and editors
 .vscode/
 .idea/

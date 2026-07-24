@@ -2,6 +2,7 @@ import * as cdk from 'aws-cdk-lib'
 import * as apigateway from 'aws-cdk-lib/aws-apigateway'
 import * as cognito from 'aws-cdk-lib/aws-cognito'
 import * as dynamodb from 'aws-cdk-lib/aws-dynamodb'
+import * as iam from 'aws-cdk-lib/aws-iam'
 import * as lambda from 'aws-cdk-lib/aws-lambda'
 import * as s3 from 'aws-cdk-lib/aws-s3'
 import { Construct } from 'constructs'
@@ -275,6 +276,44 @@ export class CloudForgeAIStack extends cdk.Stack {
     userPool.grant(refreshTokenLambda, 'cognito-idp:InitiateAuth')
 
     // ========================================
+    // AI Engine Lambda Function
+    // ========================================
+
+    // Environment variables for AI Lambda
+    const aiEnv = {
+      BEDROCK_MODEL_ID: process.env.BEDROCK_MODEL_ID || 'anthropic.claude-3-5-sonnet-20241022-v2:0',
+      BEDROCK_REGION: process.env.BEDROCK_REGION || 'us-east-1',
+      AWS_REGION_OVERRIDE: this.region,
+      LOG_LEVEL: 'INFO',
+    }
+
+    // AI Architecture Generation Lambda
+    const generateArchitectureLambda = new lambda.Function(
+      this,
+      'GenerateArchitectureFunction',
+      {
+        runtime: lambda.Runtime.NODEJS_20_X,
+        handler: 'generate-architecture.handler',
+        code: lambda.Code.fromAsset('src/lambdas/ai-engine'),
+        environment: aiEnv,
+        timeout: cdk.Duration.seconds(30), // 30s for AI generation
+        memorySize: 1024, // More memory for JSON parsing
+        layers: [sharedLayer],
+      }
+    )
+
+    // Grant Bedrock permissions
+    generateArchitectureLambda.addToRolePolicy(
+      new iam.PolicyStatement({
+        effect: iam.Effect.ALLOW,
+        actions: ['bedrock:InvokeModel', 'bedrock:InvokeModelWithResponseStream'],
+        resources: [
+          `arn:aws:bedrock:${aiEnv.BEDROCK_REGION}::foundation-model/${aiEnv.BEDROCK_MODEL_ID}`,
+        ],
+      })
+    )
+
+    // ========================================
     // API Gateway Routes
     // ========================================
 
@@ -310,6 +349,28 @@ export class CloudForgeAIStack extends cdk.Stack {
       new apigateway.LambdaIntegration(refreshTokenLambda),
       {
         methodResponses: [{ statusCode: '200' }, { statusCode: '401' }],
+      }
+    )
+
+    // API routes (protected - require authorization)
+    const apiResource = api.root.addResource('api')
+    const architecturesResource = apiResource.addResource('architectures')
+
+    // POST /api/architectures/generate - Generate architecture from description
+    architecturesResource.addResource('generate').addMethod(
+      'POST',
+      new apigateway.LambdaIntegration(generateArchitectureLambda, {
+        timeout: cdk.Duration.seconds(29), // Slightly less than Lambda timeout
+      }),
+      {
+        authorizer: authorizer,
+        authorizationType: apigateway.AuthorizationType.COGNITO,
+        methodResponses: [
+          { statusCode: '200' },
+          { statusCode: '400' },
+          { statusCode: '429' },
+          { statusCode: '500' },
+        ],
       }
     )
 
