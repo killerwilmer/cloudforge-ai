@@ -49,6 +49,8 @@ export class ArchitectureGeneratorService {
       signal: AbortSignal.timeout(API_CONFIG.timeout),
     })
 
+    await handleApiResponse(response)
+
     if (!response.ok) {
       const error = await response.json().catch(() => ({
         message: 'Architecture generation failed',

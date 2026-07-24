@@ -90,6 +90,8 @@ export class AuthService {
       },
     })
 
+    await handleApiResponse(response)
+
     if (!response.ok) {
       const error = await response.json()
       throw new Error(error.message || 'Sign out failed')

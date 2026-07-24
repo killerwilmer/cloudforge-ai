@@ -1,3 +1,4 @@
+import { Navbar } from '@/components/Navbar'
 import { architectureGeneratorService } from '@/services/ai-engine/architecture-generator.service'
 import type { Architecture } from '@/types'
 import { TokenStorage } from '@/utils/token-storage'
@@ -95,11 +96,13 @@ export function GenerateArchitecturePage({
         : ''
 
   return (
-    <div className="generate-architecture-page">
-      <header className="page-header">
-        <h1>Generate AWS Architecture</h1>
-        <p>Describe your problem and let AI design the AWS solution</p>
-      </header>
+    <>
+      <Navbar />
+      <div className="generate-architecture-page">
+        <header className="page-header">
+          <h1>Generate AWS Architecture</h1>
+          <p>Describe your problem and let AI design the AWS solution</p>
+        </header>
 
       <div className="generation-container">
         <div className="input-section">
@@ -254,5 +257,6 @@ export function GenerateArchitecturePage({
         )}
       </div>
     </div>
+    </>
   )
 }
