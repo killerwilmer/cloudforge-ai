@@ -1,0 +1,64 @@
+# Environment variables
+.env
+.env.*
+!.env.example
+
+# Dependencies
+node_modules/
+venv/
+env/
+ENV/
+vendor/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+
+# Build artifacts
+dist/
+build/
+*.log
+*.out
+*.egg-info/
+.next/
+out/
+
+# IDE and editors
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# OS files
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Test coverage
+coverage/
+.coverage
+*.cover
+.nyc_output/
+htmlcov/
+
+# Temporary files
+*.tmp
+*.temp
+.cache/
+.temp/
+
+# AWS and cloud
+.aws/
+.terraform/
+*.tfstate
+*.tfstate.backup
+
+# Secrets and credentials
+*.pem
+*.key
+*.cert
+secrets/
+credentials/
