@@ -2,10 +2,10 @@ import { TokenStorage } from './token-storage'
 
 /**
  * Get authentication token for API requests
- * Returns access token if available, null otherwise
+ * Returns ID token for API Gateway Cognito authorization
  */
 export function getAuthToken(): string | null {
-  return TokenStorage.getAccessToken()
+  return TokenStorage.getIdToken()
 }
 
 /**
