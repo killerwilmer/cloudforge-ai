@@ -273,24 +273,26 @@ This implementation plan prioritizes delivering a working demo by July 27, 2026 
 
 ### Day 5: Deployment Pipeline (Jul 24)
 
-- [x] 10. Implement AWS account connection
-  - [x] 10.1 Create AWS connection Lambda functions
-    - Implement AssumeRole flow with STS
-    - Store temporary credentials in Secrets Manager
-    - Add credential refresh logic before expiration
-    - _Requirements: 2.1, 2.2, 2.3, 2.5_
+- [x] 10. Implement routing and landing page (foundation for deployment UI)
+  - [x] 10.1 Configure React Router with authentication integration
+    - Set up BrowserRouter with public and protected routes
+    - Implement ProtectedRoute wrapper with auth guards
+    - Add 404 handling and redirects
+    - _Requirements: 18.1, 18.4_
   
-  - [x] 10.2 Build AWS connection UI
-    - Create connection wizard with IAM role setup instructions
-    - Add form for Role ARN and External ID input
-    - Display connection status and account ID
-    - _Requirements: 2.2, 2.4_
+  - [x] 10.2 Build landing page UI
+    - Create hero section with animated architecture preview
+    - Add feature cards showcasing AI capabilities
+    - Build "How It Works" section with workflow steps
+    - Implement responsive design for mobile and desktop
+    - Add navigation with dynamic auth state
+    - _Requirements: 20.1, 20.2_
   
-  - [x] 10.3 Write integration tests for AWS connection
-    - Test successful connection with valid credentials
-    - Test connection failure with invalid role
-    - Test credential refresh
-    - _Requirements: 2.1, 2.2, 2.3, 2.4, 2.5_
+  - [x] 10.3 Documentation and testing
+    - Create FRONTEND_URLS.md with routing reference
+    - Update DEVELOPMENT.md with frontend architecture
+    - Document testing steps and environment configuration
+    - _Requirements: 18.4_
 
 - [x] 11. Build deployment pipeline with Step Functions
   - [x] 11.1 Create Step Functions state machine with CDK
