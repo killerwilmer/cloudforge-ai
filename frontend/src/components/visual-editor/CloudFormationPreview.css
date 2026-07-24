@@ -3,10 +3,10 @@
 }
 
 .cloudformation-preview-dialog {
-  width: 90vw;
-  max-width: 1200px;
-  height: 85vh;
-  max-height: 900px;
+  width: 95vw;
+  max-width: 1600px;
+  height: 90vh;
+  max-height: 1000px;
   display: flex;
   flex-direction: column;
 }
@@ -31,21 +31,23 @@
   flex-shrink: 0;
   padding: 16px 24px;
   border-bottom: 1px solid #e5e7eb;
-  display: flex;
+  display: flex !important;
   align-items: center;
   gap: 20px;
   background: #f9fafb;
   position: relative;
   z-index: 20;
+  visibility: visible !important;
 }
 
 .format-selector {
-  display: flex;
+  display: flex !important;
   gap: 8px;
   border: 1px solid #d1d5db;
   border-radius: 6px;
   overflow: hidden;
   background: white;
+  visibility: visible !important;
 }
 
 .btn-format {
