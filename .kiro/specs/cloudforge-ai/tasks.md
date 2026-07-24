@@ -24,7 +24,7 @@ This implementation plan prioritizes delivering a working demo by July 27, 2026 
   - Set up local development workflow (hot reload, API mocking)
   - _Requirements: 18.1, 18.4_
 
-- [ ] 2. Implement authentication system
+- [x] 2. Implement authentication system
   - [x] 2.1 Deploy AWS Cognito User Pool with CDK
     - Configure email/password authentication
     - Set JWT token expiration to 24 hours
@@ -42,7 +42,7 @@ This implementation plan prioritizes delivering a working demo by July 27, 2026 
     - Add protected route wrapper for authenticated pages
     - _Requirements: 1.2, 1.3_
   
-  - [ ] 2.4 Write unit tests for authentication flows
+  - [x] 2.4 Write unit tests for authentication flows
     - Test successful login, failed login, token refresh
     - Test session expiration and logout
     - _Requirements: 1.2, 1.3, 1.4, 1.5_
