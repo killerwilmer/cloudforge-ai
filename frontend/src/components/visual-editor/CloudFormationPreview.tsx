@@ -1,7 +1,7 @@
-import Editor from '@monaco-editor/react'
 import { cloudFormationService } from '@/services/cloudformation.service'
 import type { Architecture } from '@/types'
 import { TokenStorage } from '@/utils/token-storage'
+import Editor from '@monaco-editor/react'
 import { useEffect, useState } from 'react'
 import './CloudFormationPreview.css'
 
@@ -11,6 +11,7 @@ interface CloudFormationPreviewProps {
 }
 
 export function CloudFormationPreview({ architecture, onClose }: CloudFormationPreviewProps) {
+  const navigate = useNavigate()
   const [template, setTemplate] = useState<string>('')
   const [format, setFormat] = useState<'yaml' | 'json'>('yaml')
   const [loading, setLoading] = useState(false)
@@ -22,6 +23,7 @@ export function CloudFormationPreview({ architecture, onClose }: CloudFormationP
   } | null>(null)
   const [validationWarnings, setValidationWarnings] = useState<string[]>([])
   const [copied, setCopied] = useState(false)
+  const [deploying, setDeploying] = useState(false)
 
   useEffect(() => {
     generateTemplate(format)
@@ -79,6 +81,33 @@ export function CloudFormationPreview({ architecture, onClose }: CloudFormationP
     setFormat(newFormat)
   }
 
+  const handleDeploy = async () => {
+    if (!template) return
+
+    const stackName = `${architecture.metadata.name.toLowerCase().replace(/[^a-z0-9]+/g, '-')}-${Date.now()}`
+    
+    setDeploying(true)
+    setError(null)
+
+    try {
+      const result = await deploymentService.startDeployment({
+        stackName,
+        region: 'us-east-1', // Default region, could be made configurable
+        template,
+        tags: {
+          Application: 'CloudForge',
+          ManagedBy: 'CloudForgeAI',
+        },
+      })
+
+      // Navigate to deployment status page
+      navigate(`/deployments/${result.deploymentId}`)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to start deployment')
+      setDeploying(false)
+    }
+  }
+
   return (
     <div className="dialog-overlay cloudformation-preview-overlay">
       <div className="dialog-content cloudformation-preview-dialog">
@@ -125,18 +154,26 @@ export function CloudFormationPreview({ architecture, onClose }: CloudFormationP
             <button
               className="btn btn-secondary"
               onClick={handleCopy}
-              disabled={loading || !template}
+              disabled={loading || !template || deploying}
               title="Copy to clipboard"
             >
               {copied ? '✓ Copied!' : '📋 Copy'}
             </button>
             <button
-              className="btn btn-primary"
+              className="btn btn-secondary"
               onClick={handleDownload}
-              disabled={loading || !template}
+              disabled={loading || !template || deploying}
               title="Download template file"
             >
               📥 Download
+            </button>
+            <button
+              className="btn btn-primary"
+              onClick={handleDeploy}
+              disabled={loading || !template || deploying}
+              title="Deploy to AWS"
+            >
+              {deploying ? '🔄 Deploying...' : '🚀 Deploy to AWS'}
             </button>
           </div>
         </div>

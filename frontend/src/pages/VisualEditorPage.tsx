@@ -596,12 +596,20 @@ export function VisualEditorPage({ initialArchitecture }: VisualEditorPageProps)
             <span className="icon">💾</span> Save
           </button>
           <button 
-            className="btn-primary" 
+            className="btn-secondary" 
             onClick={() => setShowCloudFormationPreview(true)} 
-            title="Generate CloudFormation template"
+            title="Generate and view CloudFormation template"
             disabled={nodes.length === 0}
           >
-            <span className="icon">☁️</span> Generate CloudFormation
+            <span className="icon">☁️</span> CloudFormation
+          </button>
+          <button 
+            className="btn-primary btn-deploy" 
+            onClick={() => setShowCloudFormationPreview(true)} 
+            title="Deploy architecture to AWS"
+            disabled={nodes.length === 0}
+          >
+            <span className="icon">🚀</span> Deploy to AWS
           </button>
         </div>
 
