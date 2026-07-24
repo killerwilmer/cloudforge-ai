@@ -34,6 +34,39 @@ const edgeTypes: EdgeTypes = {
   custom: CustomEdge,
 }
 
+/**
+ * Format node label with title and optional subtitle
+ * Example: "Create Todo" + "Handler" = "Create Todo\nHandler" with smaller subtitle
+ */
+const formatNodeLabel = (name: string, ServiceIcon: React.ComponentType<{ size?: number | string }>) => {
+  // Split on common patterns: "Handler", "Role", "Function", etc.
+  const patterns = /(.*?)\s+(Handler|Function|Role|Table|API|Service|Execution Role|User Pool|Queue|Topic|Bus|Database|Instance|Distribution|Stack|Group)$/i
+  const match = name.match(patterns)
+  
+  if (match) {
+    const title = match[1].trim()
+    const subtitle = match[2].trim()
+    
+    return (
+      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+          <ServiceIcon size={16} />
+          <span style={{ fontSize: '11px', fontWeight: '600', lineHeight: '1.2' }}>{title}</span>
+        </div>
+        <span style={{ fontSize: '9px', fontWeight: '400', opacity: 0.85, lineHeight: '1' }}>{subtitle}</span>
+      </div>
+    )
+  }
+  
+  // No subtitle pattern found - show icon + full name
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+      <ServiceIcon size={16} />
+      <span style={{ fontSize: '11px', fontWeight: '600', lineHeight: '1.2' }}>{name}</span>
+    </div>
+  )
+}
+
 interface VisualEditorPageProps {
   initialArchitecture?: Architecture
 }
@@ -87,12 +120,7 @@ export function VisualEditorPage({ initialArchitecture }: VisualEditorPageProps)
         type: 'default',
         position: service.position,
         data: {
-          label: (
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <ServiceIcon size={20} />
-              <span>{service.name}</span>
-            </div>
-          ),
+          label: formatNodeLabel(service.name, ServiceIcon),
           serviceType: service.type,
           configuration: service.configuration,
         },
@@ -101,9 +129,11 @@ export function VisualEditorPage({ initialArchitecture }: VisualEditorPageProps)
           color: 'white',
           border: '2px solid #222',
           borderRadius: '8px',
-          padding: '10px',
-          fontSize: '12px',
-          fontWeight: 'bold',
+          padding: '8px 10px',
+          fontSize: '11px',
+          fontWeight: '600',
+          minWidth: '140px',
+          textAlign: 'center',
         },
       }
     })
@@ -220,12 +250,7 @@ export function VisualEditorPage({ initialArchitecture }: VisualEditorPageProps)
         type: 'default',
         position,
         data: {
-          label: (
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <ServiceIcon size={20} />
-              <span>{serviceType}</span>
-            </div>
-          ),
+          label: formatNodeLabel(serviceType, ServiceIcon),
           serviceType: serviceType,
           configuration: {},
         },
@@ -234,9 +259,11 @@ export function VisualEditorPage({ initialArchitecture }: VisualEditorPageProps)
           color: 'white',
           border: '2px solid #222',
           borderRadius: '8px',
-          padding: '10px',
-          fontSize: '12px',
-          fontWeight: 'bold',
+          padding: '8px 10px',
+          fontSize: '11px',
+          fontWeight: '600',
+          minWidth: '140px',
+          textAlign: 'center',
         },
       }
 
