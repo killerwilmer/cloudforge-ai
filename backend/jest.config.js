@@ -19,5 +19,6 @@ module.exports = {
     '^@shared/(.*)$': '<rootDir>/src/shared/$1',
     '^@lambdas/(.*)$': '<rootDir>/src/lambdas/$1',
   },
+  setupFilesAfterEnv: ['<rootDir>/src/test/setup.ts'],
   testTimeout: 10000,
 }

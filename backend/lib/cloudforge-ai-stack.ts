@@ -1,10 +1,11 @@
 import * as cdk from 'aws-cdk-lib'
-import { Construct } from 'constructs'
-import * as dynamodb from 'aws-cdk-lib/aws-dynamodb'
-import * as s3 from 'aws-cdk-lib/aws-s3'
-import * as cognito from 'aws-cdk-lib/aws-cognito'
 import * as apigateway from 'aws-cdk-lib/aws-apigateway'
+import * as cognito from 'aws-cdk-lib/aws-cognito'
+import * as dynamodb from 'aws-cdk-lib/aws-dynamodb'
+import * as iam from 'aws-cdk-lib/aws-iam'
 import * as lambda from 'aws-cdk-lib/aws-lambda'
+import * as s3 from 'aws-cdk-lib/aws-s3'
+import { Construct } from 'constructs'
 
 /**
  * Main CloudForge AI Infrastructure Stack
@@ -149,10 +150,13 @@ export class CloudForgeAIStack extends cdk.Stack {
     // Lambda Layer for Shared Code
     // ========================================
 
+    // Shared layer with utilities and AWS SDK clients
+    // Build with: npm run build:layer
     const sharedLayer = new lambda.LayerVersion(this, 'SharedLayer', {
-      code: lambda.Code.fromAsset('src/shared'),
+      code: lambda.Code.fromAsset('layer'),
       compatibleRuntimes: [lambda.Runtime.NODEJS_20_X],
-      description: 'Shared utilities and types for CloudForge AI',
+      description: 'Shared utilities, types, and AWS SDK clients for CloudForge AI',
+      layerVersionName: 'cloudforge-shared-layer',
     })
 
     // ========================================
@@ -164,24 +168,338 @@ export class CloudForgeAIStack extends cdk.Stack {
       description: 'API for CloudForge AI platform',
       deployOptions: {
         stageName: 'prod',
-        throttlingBurstLimit: 100,
-        throttlingRateLimit: 50,
+        throttlingBurstLimit: 200, // Max concurrent requests
+        throttlingRateLimit: 100, // 100 requests per second base limit
+        metricsEnabled: true,
+        loggingLevel: apigateway.MethodLoggingLevel.OFF, // Disabled for initial deployment
+        dataTraceEnabled: false, // Don't log full request/response (PII)
       },
       defaultCorsPreflightOptions: {
-        allowOrigins: apigateway.Cors.ALL_ORIGINS,
+        allowOrigins: apigateway.Cors.ALL_ORIGINS, // TODO: Restrict in production
         allowMethods: apigateway.Cors.ALL_METHODS,
-        allowHeaders: ['Content-Type', 'Authorization'],
+        allowHeaders: [
+          'Content-Type',
+          'Authorization',
+          'X-Amz-Date',
+          'X-Api-Key',
+          'X-Amz-Security-Token',
+        ],
+        maxAge: cdk.Duration.hours(1),
       },
     })
 
-    // Cognito authorizer
+    // Cognito authorizer for protected routes
     const authorizer = new apigateway.CognitoUserPoolsAuthorizer(
       this,
       'CognitoAuthorizer',
       {
         cognitoUserPools: [userPool],
+        authorizerName: 'CloudForgeCognitoAuthorizer',
+        identitySource: 'method.request.header.Authorization',
       }
     )
+
+    // ========================================
+    // Auth Lambda Functions
+    // ========================================
+
+    // Environment variables for auth Lambdas
+    const authEnv = {
+      COGNITO_USER_POOL_ID: userPool.userPoolId,
+      COGNITO_CLIENT_ID: userPoolClient.userPoolClientId,
+      DYNAMODB_USERS_TABLE: usersTable.tableName,
+      LOG_LEVEL: 'INFO',
+    }
+
+    // Sign up Lambda
+    const signUpLambda = new lambda.Function(this, 'SignUpFunction', {
+      runtime: lambda.Runtime.NODEJS_20_X,
+      handler: 'lambdas/auth/sign-up.handler',
+      code: lambda.Code.fromAsset('src'),
+      environment: authEnv,
+      timeout: cdk.Duration.seconds(10),
+      memorySize: 256,
+      layers: [sharedLayer],
+    })
+
+    // Sign in Lambda
+    const signInLambda = new lambda.Function(this, 'SignInFunction', {
+      runtime: lambda.Runtime.NODEJS_20_X,
+      handler: 'lambdas/auth/sign-in.handler',
+      code: lambda.Code.fromAsset('src'),
+      environment: authEnv,
+      timeout: cdk.Duration.seconds(10),
+      memorySize: 256,
+      layers: [sharedLayer],
+    })
+
+    // Sign out Lambda
+    const signOutLambda = new lambda.Function(this, 'SignOutFunction', {
+      runtime: lambda.Runtime.NODEJS_20_X,
+      handler: 'lambdas/auth/sign-out.handler',
+      code: lambda.Code.fromAsset('src'),
+      environment: authEnv,
+      timeout: cdk.Duration.seconds(10),
+      memorySize: 256,
+      layers: [sharedLayer],
+    })
+
+    // Refresh token Lambda
+    const refreshTokenLambda = new lambda.Function(
+      this,
+      'RefreshTokenFunction',
+      {
+        runtime: lambda.Runtime.NODEJS_20_X,
+        handler: 'lambdas/auth/refresh-token.handler',
+        code: lambda.Code.fromAsset('src'),
+        environment: authEnv,
+        timeout: cdk.Duration.seconds(10),
+        memorySize: 256,
+        layers: [sharedLayer],
+      }
+    )
+
+    // Verify email Lambda
+    const verifyEmailLambda = new lambda.Function(
+      this,
+      'VerifyEmailFunction',
+      {
+        runtime: lambda.Runtime.NODEJS_20_X,
+        handler: 'lambdas/auth/verify-email.handler',
+        code: lambda.Code.fromAsset('src'),
+        environment: authEnv,
+        timeout: cdk.Duration.seconds(10),
+        memorySize: 256,
+        layers: [sharedLayer],
+      }
+    )
+
+    // Resend verification code Lambda
+    const resendCodeLambda = new lambda.Function(
+      this,
+      'ResendCodeFunction',
+      {
+        runtime: lambda.Runtime.NODEJS_20_X,
+        handler: 'lambdas/auth/resend-code.handler',
+        code: lambda.Code.fromAsset('src'),
+        environment: authEnv,
+        timeout: cdk.Duration.seconds(10),
+        memorySize: 256,
+        layers: [sharedLayer],
+      }
+    )
+
+    // Grant Cognito permissions to Lambda functions
+    userPool.grant(
+      signUpLambda,
+      'cognito-idp:SignUp',
+      'cognito-idp:ConfirmSignUp'
+    )
+    userPool.grant(
+      signInLambda,
+      'cognito-idp:InitiateAuth',
+      'cognito-idp:RespondToAuthChallenge'
+    )
+    userPool.grant(signOutLambda, 'cognito-idp:GlobalSignOut')
+    userPool.grant(refreshTokenLambda, 'cognito-idp:InitiateAuth')
+    userPool.grant(verifyEmailLambda, 'cognito-idp:ConfirmSignUp')
+    userPool.grant(
+      resendCodeLambda,
+      'cognito-idp:ResendConfirmationCode'
+    )
+
+    // Grant DynamoDB permissions for rate limiting in resend-code Lambda
+    usersTable.grantReadWriteData(resendCodeLambda)
+
+    // ========================================
+    // AI Engine Lambda Function
+    // ========================================
+
+    // Environment variables for AI Lambda
+    const aiEnv = {
+      BEDROCK_MODEL_ID: process.env.BEDROCK_MODEL_ID || 'us.anthropic.claude-haiku-4-5-20251001-v1:0',
+      BEDROCK_REGION: process.env.BEDROCK_REGION || 'us-east-1',
+      DYNAMODB_USERS_TABLE: usersTable.tableName,
+      LOG_LEVEL: 'INFO',
+    }
+
+    // AI Architecture Generation Lambda
+    const generateArchitectureLambda = new lambda.Function(
+      this,
+      'GenerateArchitectureFunction',
+      {
+        runtime: lambda.Runtime.NODEJS_20_X,
+        handler: 'lambdas/ai-engine/generate-architecture.handler',
+        code: lambda.Code.fromAsset('src'),
+        environment: aiEnv,
+        timeout: cdk.Duration.seconds(30), // 30s for AI generation
+        memorySize: 1024, // More memory for JSON parsing
+        layers: [sharedLayer],
+      }
+    )
+
+    // Grant Bedrock permissions (foundation models + inference profiles, all regions)
+    // Note: Inference profiles may route to different regions, so we allow all regions
+    generateArchitectureLambda.addToRolePolicy(
+      new iam.PolicyStatement({
+        effect: iam.Effect.ALLOW,
+        actions: ['bedrock:InvokeModel', 'bedrock:InvokeModelWithResponseStream'],
+        resources: [
+          `arn:aws:bedrock:*::foundation-model/*`,
+          `arn:aws:bedrock:*:${this.account}:inference-profile/*`,
+        ],
+      })
+    )
+
+    // Grant AWS Marketplace permissions for model access
+    generateArchitectureLambda.addToRolePolicy(
+      new iam.PolicyStatement({
+        effect: iam.Effect.ALLOW,
+        actions: ['aws-marketplace:ViewSubscriptions', 'aws-marketplace:Subscribe'],
+        resources: ['*'],
+      })
+    )
+
+    // ========================================
+    // API Gateway Routes
+    // ========================================
+
+    // Auth routes (public - no authorization)
+    const authResource = api.root.addResource('auth')
+
+    authResource.addResource('signup').addMethod(
+      'POST',
+      new apigateway.LambdaIntegration(signUpLambda),
+      {
+        methodResponses: [{ statusCode: '200' }, { statusCode: '400' }],
+      }
+    )
+
+    authResource.addResource('signin').addMethod(
+      'POST',
+      new apigateway.LambdaIntegration(signInLambda),
+      {
+        methodResponses: [{ statusCode: '200' }, { statusCode: '401' }],
+      }
+    )
+
+    authResource.addResource('signout').addMethod(
+      'POST',
+      new apigateway.LambdaIntegration(signOutLambda),
+      {
+        methodResponses: [{ statusCode: '200' }, { statusCode: '401' }],
+      }
+    )
+
+    authResource.addResource('refresh').addMethod(
+      'POST',
+      new apigateway.LambdaIntegration(refreshTokenLambda),
+      {
+        methodResponses: [{ statusCode: '200' }, { statusCode: '401' }],
+      }
+    )
+
+    authResource.addResource('verify').addMethod(
+      'POST',
+      new apigateway.LambdaIntegration(verifyEmailLambda),
+      {
+        methodResponses: [
+          { statusCode: '200' },
+          { statusCode: '400' },
+          { statusCode: '404' },
+          { statusCode: '429' },
+        ],
+      }
+    )
+
+    authResource.addResource('resend-code').addMethod(
+      'POST',
+      new apigateway.LambdaIntegration(resendCodeLambda),
+      {
+        methodResponses: [
+          { statusCode: '200' },
+          { statusCode: '400' },
+          { statusCode: '404' },
+          { statusCode: '429' },
+        ],
+      }
+    )
+
+    // API routes (protected - require authorization)
+    const apiResource = api.root.addResource('api')
+    const architecturesResource = apiResource.addResource('architectures')
+
+    // POST /api/architectures/generate - Generate architecture from description
+    architecturesResource.addResource('generate').addMethod(
+      'POST',
+      new apigateway.LambdaIntegration(generateArchitectureLambda, {
+        timeout: cdk.Duration.seconds(29), // Slightly less than Lambda timeout
+      }),
+      {
+        authorizer: authorizer,
+        authorizationType: apigateway.AuthorizationType.COGNITO,
+        methodResponses: [
+          { statusCode: '200' },
+          { statusCode: '400' },
+          { statusCode: '401' },
+          { statusCode: '429' },
+          { statusCode: '500' },
+        ],
+      }
+    )
+
+    // Add Gateway Responses to include CORS headers for auth failures
+    api.addGatewayResponse('Unauthorized', {
+      type: apigateway.ResponseType.UNAUTHORIZED,
+      statusCode: '401',
+      responseHeaders: {
+        'Access-Control-Allow-Origin': "'*'",
+        'Access-Control-Allow-Headers': "'Content-Type,Authorization'",
+        'Access-Control-Allow-Methods': "'OPTIONS,POST,GET,PUT,DELETE'",
+      },
+    })
+
+    api.addGatewayResponse('AccessDenied', {
+      type: apigateway.ResponseType.ACCESS_DENIED,
+      statusCode: '403',
+      responseHeaders: {
+        'Access-Control-Allow-Origin': "'*'",
+        'Access-Control-Allow-Headers': "'Content-Type,Authorization'",
+        'Access-Control-Allow-Methods': "'OPTIONS,POST,GET,PUT,DELETE'",
+      },
+    })
+
+    // ========================================
+    // API Gateway Usage Plan & Rate Limiting
+    // ========================================
+
+    // Create API key for tracking (can be extended for per-user keys)
+    const apiKey = api.addApiKey('CloudForgeAPIKey', {
+      apiKeyName: 'cloudforge-api-key',
+      description: 'API key for CloudForge AI',
+    })
+
+    // Create usage plan with rate limiting
+    const usagePlan = api.addUsagePlan('CloudForgeUsagePlan', {
+      name: 'CloudForge Standard Plan',
+      description: 'Usage plan with 100 req/min per user rate limit',
+      throttle: {
+        rateLimit: 100, // 100 requests per second per user
+        burstLimit: 200, // Max 200 concurrent requests
+      },
+      quota: {
+        limit: 10000, // 10,000 requests per day per user
+        period: apigateway.Period.DAY,
+      },
+    })
+
+    // Associate usage plan with API stage
+    usagePlan.addApiStage({
+      stage: api.deploymentStage,
+    })
+
+    // Associate API key with usage plan
+    usagePlan.addApiKey(apiKey)
 
     // ========================================
     // Outputs
@@ -234,9 +552,5 @@ export class CloudForgeAIStack extends cdk.Stack {
       description: 'DynamoDB Deployments table',
       exportName: 'CloudForgeDeploymentsTable',
     })
-
-    // Suppress unused variable warnings for resources that will be used later
-    void sharedLayer
-    void authorizer
   }
 }

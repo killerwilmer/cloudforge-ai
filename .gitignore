@@ -23,6 +23,13 @@ build/
 *.egg-info/
 .next/
 out/
+*.d.ts
+*.js.map
+
+# Compiled JavaScript from TypeScript (backend)
+backend/**/*.js
+!backend/scripts/**/*.js
+!backend/jest.config.js
 
 # IDE and editors
 .vscode/
@@ -57,6 +64,7 @@ htmlcov/
 *.tfstate.backup
 cdk.out/
 cdk.context.json
+layer/
 
 # Secrets and credentials
 *.pem

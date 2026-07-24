@@ -2,7 +2,7 @@
  * Standardized API Gateway response helpers
  */
 
-import { APIGatewayProxyResult } from 'aws-lambda'
+import { APIGatewayProxyResult } from 'aws-lambda';
 
 const DEFAULT_HEADERS = {
   'Content-Type': 'application/json',
@@ -31,10 +31,8 @@ export function errorResponse(
     statusCode,
     headers: DEFAULT_HEADERS,
     body: JSON.stringify({
-      error: {
-        message,
-        ...details,
-      },
+      message,
+      ...details,
     }),
   }
 }
