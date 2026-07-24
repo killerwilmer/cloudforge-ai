@@ -55,6 +55,8 @@ htmlcov/
 .terraform/
 *.tfstate
 *.tfstate.backup
+cdk.out/
+cdk.context.json
 
 # Secrets and credentials
 *.pem

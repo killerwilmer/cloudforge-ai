@@ -42,7 +42,7 @@ This implementation plan prioritizes delivering a working demo by July 27, 2026 
     - Add protected route wrapper for authenticated pages
     - _Requirements: 1.2, 1.3_
   
-  - [ ]* 2.4 Write unit tests for authentication flows
+  - [ ] 2.4 Write unit tests for authentication flows
     - Test successful login, failed login, token refresh
     - Test session expiration and logout
     - _Requirements: 1.2, 1.3, 1.4, 1.5_
@@ -80,7 +80,7 @@ This implementation plan prioritizes delivering a working demo by July 27, 2026 
     - Return Architecture object with services and connections
     - _Requirements: 3.1, 3.2, 3.3, 3.4, 3.5_
   
-  - [ ]* 4.4 Write integration tests for AI generation
+  - [ ] 4.4 Write integration tests for AI generation
     - Test successful generation with various problem descriptions
     - Test timeout handling and error scenarios
     - Validate Architecture object structure
@@ -121,7 +121,7 @@ This implementation plan prioritizes delivering a working demo by July 27, 2026 
     - Add auto-layout algorithm for generated architectures
     - _Requirements: 4.4_
   
-  - [ ]* 6.5 Write unit tests for editor operations
+  - [ ] 6.5 Write unit tests for editor operations
     - Test add service, remove service, move service
     - Test connection creation and validation
     - Test configuration updates
@@ -150,7 +150,7 @@ This implementation plan prioritizes delivering a working demo by July 27, 2026 
     - Implement recovery prompt on page reload
     - _Requirements: 13.1, 13.3, 13.5, 19.3, 19.4_
   
-  - [ ]* 7.4 Write integration tests for diagram persistence
+  - [ ] 7.4 Write integration tests for diagram persistence
     - Test save, load, list, delete operations
     - Test versioning and auto-save recovery
     - _Requirements: 13.1, 13.2, 13.3, 13.4, 13.5, 13.6_
@@ -169,7 +169,7 @@ This implementation plan prioritizes delivering a working demo by July 27, 2026 
     - Implement pretty printer with consistent formatting
     - _Requirements: 6.1, 6.2, 6.3, 6.5_
   
-  - [ ]* 8.3 Write property test for CloudFormation round-trip equivalence
+  - [ ] 8.3 Write property test for CloudFormation round-trip equivalence
     - **Property 4: CloudFormation Round-Trip Equivalence**
     - **Validates: Requirements 6.4**
     - Generate random valid CloudFormation representations
@@ -182,7 +182,7 @@ This implementation plan prioritizes delivering a working demo by July 27, 2026 
     - Add "Copy to Clipboard" and "Download" buttons
     - _Requirements: 5.6_
   
-  - [ ]* 8.5 Write unit tests for CloudFormation generation
+  - [ ] 8.5 Write unit tests for CloudFormation generation
     - Test service mapping for Lambda, API Gateway, DynamoDB, S3
     - Test dependency generation
     - Test validation and error handling
@@ -209,7 +209,7 @@ This implementation plan prioritizes delivering a working demo by July 27, 2026 
     - Display connection status and account ID
     - _Requirements: 2.2, 2.4_
   
-  - [ ]* 10.3 Write integration tests for AWS connection
+  - [ ] 10.3 Write integration tests for AWS connection
     - Test successful connection with valid credentials
     - Test connection failure with invalid role
     - Test credential refresh
@@ -235,7 +235,7 @@ This implementation plan prioritizes delivering a working demo by July 27, 2026 
     - Store stack status, resources, and errors
     - _Requirements: 7.7_
   
-  - [ ]* 11.4 Write integration tests for deployment pipeline
+  - [ ] 11.4 Write integration tests for deployment pipeline
     - Test successful deployment flow
     - Test validation failure handling
     - Test deployment failure and rollback
@@ -255,7 +255,7 @@ This implementation plan prioritizes delivering a working demo by July 27, 2026 
     - Add links to AWS Console for created resources
     - _Requirements: 7.7, 12.6, 12.7_
   
-  - [ ]* 12.3 Write unit tests for deployment UI components
+  - [ ] 12.3 Write unit tests for deployment UI components
     - Test status rendering for all phases
     - Test error display
     - Test resource list rendering
@@ -290,7 +290,7 @@ This implementation plan prioritizes delivering a working demo by July 27, 2026 
     - Add one-click accept to apply changes
     - _Requirements: 8.5, 15.3, 15.4_
   
-  - [ ]* 14.4 Write unit tests for cost optimization
+  - [ ] 14.4 Write unit tests for cost optimization
     - Test cost calculation for common services
     - Test optimization recommendations
     - Test architecture updates after accepting optimization
@@ -317,7 +317,7 @@ This implementation plan prioritizes delivering a working demo by July 27, 2026 
     - Add one-click accept to apply security improvements
     - _Requirements: 9.7_
   
-  - [ ]* 15.4 Write unit tests for security analyzer
+  - [ ] 15.4 Write unit tests for security analyzer
     - Test detection of public S3 buckets
     - Test detection of Lambda without VPC
     - Test detection of hardcoded secrets
@@ -337,7 +337,7 @@ This implementation plan prioritizes delivering a working demo by July 27, 2026 
     - Prevent "Deploy" button when critical errors exist
     - _Requirements: 16.6, 16.7_
   
-  - [ ]* 16.3 Write unit tests for validation
+  - [ ] 16.3 Write unit tests for validation
     - Test missing configuration detection
     - Test circular dependency detection
     - Test invalid reference detection
@@ -372,7 +372,7 @@ This implementation plan prioritizes delivering a working demo by July 27, 2026 
     - Add "Import Architecture" button
     - _Requirements: 11.5, 11.6, 11.7, 11.8_
   
-  - [ ]* 18.4 Write integration tests for repository analyzer
+  - [ ] 18.4 Write integration tests for repository analyzer
     - Test stack detection for Node.js, Python, Java projects
     - Test architecture generation
     - _Requirements: 11.2, 11.3, 11.4, 11.5, 11.9_
@@ -395,7 +395,7 @@ This implementation plan prioritizes delivering a working demo by July 27, 2026 
     - Distinguish retryable vs non-retryable errors
     - _Requirements: 19.1_
   
-  - [ ]* 19.4 Write unit tests for error handling
+  - [ ] 19.4 Write unit tests for error handling
     - Test retry logic with transient failures
     - Test error message formatting
     - Test logging output structure
