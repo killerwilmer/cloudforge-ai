@@ -60,7 +60,7 @@ This implementation plan prioritizes delivering a working demo by July 27, 2026 
     - Add request/response validation helpers
     - _Requirements: 19.1, 19.2, 19.5_
 
-- [ ] 4. Implement AI architecture generation (core differentiator)
+- [x] 4. Implement AI architecture generation (core differentiator)
   - [x] 4.1 Create AI Engine Lambda function with Bedrock integration
     - Set up Amazon Bedrock client (Claude 3.5 Sonnet)
     - Implement prompt engineering for architecture generation
@@ -80,7 +80,7 @@ This implementation plan prioritizes delivering a working demo by July 27, 2026 
     - Return Architecture object with services and connections
     - _Requirements: 3.1, 3.2, 3.3, 3.4, 3.5_
   
-  - [ ] 4.4 Write integration tests for AI generation
+  - [x] 4.4 Write integration tests for AI generation
     - Test successful generation with various problem descriptions
     - Test timeout handling and error scenarios
     - Validate Architecture object structure
