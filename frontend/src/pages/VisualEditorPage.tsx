@@ -445,20 +445,6 @@ export function VisualEditorPage({ initialArchitecture }: VisualEditorPageProps)
     }
   }, [nodes, edges])
 
-  const handleExportJSON = useCallback(() => {
-    const architecture = exportArchitecture()
-    const jsonString = JSON.stringify(architecture, null, 2)
-    const blob = new Blob([jsonString], { type: 'application/json' })
-    const url = URL.createObjectURL(blob)
-    const link = document.createElement('a')
-    link.href = url
-    link.download = `architecture-${Date.now()}.json`
-    document.body.appendChild(link)
-    link.click()
-    document.body.removeChild(link)
-    URL.revokeObjectURL(url)
-  }, [exportArchitecture])
-
   const handleSaveDiagram = async (name: string, changeDescription?: string) => {
     const architecture = exportArchitecture()
     const accessToken = TokenStorage.getIdToken()
@@ -602,9 +588,6 @@ export function VisualEditorPage({ initialArchitecture }: VisualEditorPageProps)
         <div className="editor-toolbar">
           <button className="btn-secondary" onClick={handleAutoLayout} title="Auto-arrange nodes (Ctrl/Cmd + L)">
             <span className="icon">⚡</span> Auto-Layout
-          </button>
-          <button className="btn-secondary" onClick={handleExportJSON} title="Download architecture as JSON file">
-            <span className="icon">📥</span> Export JSON
           </button>
           <button className="btn-secondary" onClick={() => setShowLoadDialog(true)} title="Load saved diagram">
             <span className="icon">📂</span> Load
