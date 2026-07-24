@@ -16,6 +16,52 @@ export function AWSConnectionPage() {
 
         <div className="connection-content">
           <AWSConnectionStatus />
+
+          <div className="next-steps-section">
+            <h3>🚀 What's Next?</h3>
+            <div className="next-steps-cards">
+              <div className="next-step-card">
+                <div className="step-number">1</div>
+                <h4>Generate Architecture</h4>
+                <p>
+                  Describe your application in plain English and let AI generate
+                  an AWS architecture diagram for you.
+                </p>
+                <button
+                  className="btn-secondary"
+                  onClick={() => (window.location.href = '/generate')}
+                >
+                  Go to Generate →
+                </button>
+              </div>
+
+              <div className="next-step-card">
+                <div className="step-number">2</div>
+                <h4>Edit Visually</h4>
+                <p>
+                  Customize your architecture using our drag-and-drop visual
+                  editor. Add services, configure properties, and connect
+                  components.
+                </p>
+                <button
+                  className="btn-secondary"
+                  onClick={() => (window.location.href = '/editor')}
+                >
+                  Go to Editor →
+                </button>
+              </div>
+
+              <div className="next-step-card coming-soon">
+                <div className="step-number">3</div>
+                <h4>Deploy to AWS</h4>
+                <p>
+                  One-click deployment to your connected AWS account. (Coming
+                  soon in Task 11 - Deployment Pipeline)
+                </p>
+                <div className="coming-soon-badge">Coming Soon</div>
+              </div>
+            </div>
+          </div>
         </div>
 
         <div className="security-info">
