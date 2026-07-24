@@ -467,6 +467,136 @@ export class CloudForgeAIStack extends cdk.Stack {
     )
 
     // ========================================
+    // AWS Connection Lambda Functions
+    // ========================================
+
+    // Environment variables for AWS connection Lambdas
+    const awsConnectionEnv = {
+      LOG_LEVEL: 'INFO',
+    }
+
+    // Connect AWS Lambda
+    const connectAWSLambda = new lambda.Function(
+      this,
+      'ConnectAWSFunction',
+      {
+        runtime: lambda.Runtime.NODEJS_20_X,
+        handler: 'lambdas/aws-connection/connect-aws.handler',
+        code: lambda.Code.fromAsset('src'),
+        environment: awsConnectionEnv,
+        timeout: cdk.Duration.seconds(15),
+        memorySize: 512,
+        layers: [sharedLayer],
+      }
+    )
+
+    // Get connection Lambda
+    const getConnectionLambda = new lambda.Function(
+      this,
+      'GetConnectionFunction',
+      {
+        runtime: lambda.Runtime.NODEJS_20_X,
+        handler: 'lambdas/aws-connection/get-connection.handler',
+        code: lambda.Code.fromAsset('src'),
+        environment: awsConnectionEnv,
+        timeout: cdk.Duration.seconds(5),
+        memorySize: 256,
+        layers: [sharedLayer],
+      }
+    )
+
+    // Refresh connection Lambda
+    const refreshConnectionLambda = new lambda.Function(
+      this,
+      'RefreshConnectionFunction',
+      {
+        runtime: lambda.Runtime.NODEJS_20_X,
+        handler: 'lambdas/aws-connection/refresh-connection.handler',
+        code: lambda.Code.fromAsset('src'),
+        environment: awsConnectionEnv,
+        timeout: cdk.Duration.seconds(15),
+        memorySize: 512,
+        layers: [sharedLayer],
+      }
+    )
+
+    // Disconnect AWS Lambda
+    const disconnectAWSLambda = new lambda.Function(
+      this,
+      'DisconnectAWSFunction',
+      {
+        runtime: lambda.Runtime.NODEJS_20_X,
+        handler: 'lambdas/aws-connection/disconnect-aws.handler',
+        code: lambda.Code.fromAsset('src'),
+        environment: awsConnectionEnv,
+        timeout: cdk.Duration.seconds(5),
+        memorySize: 256,
+        layers: [sharedLayer],
+      }
+    )
+
+    // Grant STS permissions for AssumeRole
+    connectAWSLambda.addToRolePolicy(
+      new iam.PolicyStatement({
+        effect: iam.Effect.ALLOW,
+        actions: ['sts:AssumeRole'],
+        resources: ['*'], // User provides the role ARN
+      })
+    )
+
+    refreshConnectionLambda.addToRolePolicy(
+      new iam.PolicyStatement({
+        effect: iam.Effect.ALLOW,
+        actions: ['sts:AssumeRole'],
+        resources: ['*'], // User provides the role ARN
+      })
+    )
+
+    // Grant Secrets Manager permissions
+    // Pattern: cloudforge/connection/*
+    const secretsPattern = `arn:aws:secretsmanager:${this.region}:${this.account}:secret:cloudforge/connection/*`
+
+    connectAWSLambda.addToRolePolicy(
+      new iam.PolicyStatement({
+        effect: iam.Effect.ALLOW,
+        actions: [
+          'secretsmanager:CreateSecret',
+          'secretsmanager:UpdateSecret',
+          'secretsmanager:DescribeSecret',
+          'secretsmanager:TagResource',
+        ],
+        resources: [secretsPattern],
+      })
+    )
+
+    getConnectionLambda.addToRolePolicy(
+      new iam.PolicyStatement({
+        effect: iam.Effect.ALLOW,
+        actions: ['secretsmanager:GetSecretValue'],
+        resources: [secretsPattern],
+      })
+    )
+
+    refreshConnectionLambda.addToRolePolicy(
+      new iam.PolicyStatement({
+        effect: iam.Effect.ALLOW,
+        actions: [
+          'secretsmanager:GetSecretValue',
+          'secretsmanager:UpdateSecret',
+        ],
+        resources: [secretsPattern],
+      })
+    )
+
+    disconnectAWSLambda.addToRolePolicy(
+      new iam.PolicyStatement({
+        effect: iam.Effect.ALLOW,
+        actions: ['secretsmanager:DeleteSecret'],
+        resources: [secretsPattern],
+      })
+    )
+
+    // ========================================
     // API Gateway Routes
     // ========================================
 
@@ -639,6 +769,78 @@ export class CloudForgeAIStack extends cdk.Stack {
         methodResponses: [
           { statusCode: '200' },
           { statusCode: '400' },
+          { statusCode: '401' },
+          { statusCode: '500' },
+        ],
+      }
+    )
+
+    // AWS Connection routes
+    const awsConnectionResource = apiResource.addResource('aws-connection')
+
+    // POST /api/aws-connection/connect - Connect AWS account
+    awsConnectionResource.addResource('connect').addMethod(
+      'POST',
+      new apigateway.LambdaIntegration(connectAWSLambda, {
+        timeout: cdk.Duration.seconds(14),
+      }),
+      {
+        authorizer: authorizer,
+        authorizationType: apigateway.AuthorizationType.COGNITO,
+        methodResponses: [
+          { statusCode: '200' },
+          { statusCode: '400' },
+          { statusCode: '401' },
+          { statusCode: '403' },
+          { statusCode: '500' },
+        ],
+      }
+    )
+
+    // GET /api/aws-connection/status - Get connection status
+    awsConnectionResource.addResource('status').addMethod(
+      'GET',
+      new apigateway.LambdaIntegration(getConnectionLambda),
+      {
+        authorizer: authorizer,
+        authorizationType: apigateway.AuthorizationType.COGNITO,
+        methodResponses: [
+          { statusCode: '200' },
+          { statusCode: '401' },
+          { statusCode: '404' },
+          { statusCode: '500' },
+        ],
+      }
+    )
+
+    // POST /api/aws-connection/refresh - Refresh connection credentials
+    awsConnectionResource.addResource('refresh').addMethod(
+      'POST',
+      new apigateway.LambdaIntegration(refreshConnectionLambda, {
+        timeout: cdk.Duration.seconds(14),
+      }),
+      {
+        authorizer: authorizer,
+        authorizationType: apigateway.AuthorizationType.COGNITO,
+        methodResponses: [
+          { statusCode: '200' },
+          { statusCode: '401' },
+          { statusCode: '403' },
+          { statusCode: '404' },
+          { statusCode: '500' },
+        ],
+      }
+    )
+
+    // DELETE /api/aws-connection/disconnect - Disconnect AWS account
+    awsConnectionResource.addResource('disconnect').addMethod(
+      'DELETE',
+      new apigateway.LambdaIntegration(disconnectAWSLambda),
+      {
+        authorizer: authorizer,
+        authorizationType: apigateway.AuthorizationType.COGNITO,
+        methodResponses: [
+          { statusCode: '200' },
           { statusCode: '401' },
           { statusCode: '500' },
         ],
