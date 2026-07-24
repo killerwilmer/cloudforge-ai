@@ -443,6 +443,30 @@ export class CloudForgeAIStack extends cdk.Stack {
     diagramsBucket.grantReadWrite(deleteDiagramLambda)
 
     // ========================================
+    // CloudFormation Generation Lambda Functions
+    // ========================================
+
+    // Environment variables for CloudFormation Lambda
+    const cfnEnv = {
+      LOG_LEVEL: 'INFO',
+    }
+
+    // Generate CloudFormation Lambda
+    const generateCloudFormationLambda = new lambda.Function(
+      this,
+      'GenerateCloudFormationFunction',
+      {
+        runtime: lambda.Runtime.NODEJS_20_X,
+        handler: 'lambdas/deployment/generate-cloudformation.handler',
+        code: lambda.Code.fromAsset('src'),
+        environment: cfnEnv,
+        timeout: cdk.Duration.seconds(10),
+        memorySize: 512,
+        layers: [sharedLayer],
+      }
+    )
+
+    // ========================================
     // API Gateway Routes
     // ========================================
 
@@ -597,6 +621,25 @@ export class CloudForgeAIStack extends cdk.Stack {
           { statusCode: '401' },
           { statusCode: '403' },
           { statusCode: '404' },
+          { statusCode: '500' },
+        ],
+      }
+    )
+
+    // CloudFormation generation routes
+    const cloudformationResource = apiResource.addResource('cloudformation')
+
+    // POST /api/cloudformation/generate - Generate CloudFormation from architecture
+    cloudformationResource.addResource('generate').addMethod(
+      'POST',
+      new apigateway.LambdaIntegration(generateCloudFormationLambda),
+      {
+        authorizer: authorizer,
+        authorizationType: apigateway.AuthorizationType.COGNITO,
+        methodResponses: [
+          { statusCode: '200' },
+          { statusCode: '400' },
+          { statusCode: '401' },
           { statusCode: '500' },
         ],
       }

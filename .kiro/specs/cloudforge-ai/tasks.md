@@ -232,15 +232,15 @@ This implementation plan prioritizes delivering a working demo by July 27, 2026 
     - Test versioning and auto-save recovery
     - _Requirements: 13.1, 13.2, 13.3, 13.4, 13.5, 13.6_
 
-- [ ] 8. Implement CloudFormation template generation (critical for demo)
-  - [ ] 8.1 Create CloudFormation generator Lambda function
+- [x] 8. Implement CloudFormation template generation (critical for demo)
+  - [x] 8.1 Create CloudFormation generator Lambda function
     - Implement Architecture to CloudFormation translation logic
     - Map AWS service types to CloudFormation resource types
     - Generate resource properties from service configurations
     - Establish resource dependencies based on connections
     - _Requirements: 5.1, 5.2, 5.3, 5.4_
   
-  - [ ] 8.2 Add CloudFormation parser and pretty printer
+  - [x] 8.2 Add CloudFormation parser and pretty printer
     - Implement YAML parser for CloudFormation templates
     - Add validation for CloudFormation syntax
     - Implement pretty printer with consistent formatting
@@ -252,7 +252,7 @@ This implementation plan prioritizes delivering a working demo by July 27, 2026 
     - Generate random valid CloudFormation representations
     - Verify parse(print(x)) ≡ x for all generated inputs
   
-  - [ ] 8.4 Build CloudFormation preview UI
+  - [x] 8.4 Build CloudFormation preview UI
     - Create code editor with syntax highlighting (Monaco Editor)
     - Add "Generate CloudFormation" button
     - Display generated template in read-only editor

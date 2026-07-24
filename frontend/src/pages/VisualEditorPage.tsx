@@ -1,4 +1,5 @@
 import { Navbar } from '@/components/Navbar'
+import { CloudFormationPreview } from '@/components/visual-editor/CloudFormationPreview'
 import { CustomEdge } from '@/components/visual-editor/CustomEdge'
 import { LoadDiagramDialog } from '@/components/visual-editor/LoadDiagramDialog'
 import { SaveDiagramDialog } from '@/components/visual-editor/SaveDiagramDialog'
@@ -93,6 +94,7 @@ export function VisualEditorPage({ initialArchitecture }: VisualEditorPageProps)
   const [showSaveDialog, setShowSaveDialog] = useState(false)
   const [showLoadDialog, setShowLoadDialog] = useState(false)
   const [showRecoveryPrompt, setShowRecoveryPrompt] = useState(false)
+  const [showCloudFormationPreview, setShowCloudFormationPreview] = useState(false)
 
   // Load initial architecture from props, navigation state, or context
   useEffect(() => {
@@ -610,6 +612,14 @@ export function VisualEditorPage({ initialArchitecture }: VisualEditorPageProps)
           <button className="btn-primary" onClick={() => setShowSaveDialog(true)} title="Save diagram to cloud">
             <span className="icon">💾</span> Save
           </button>
+          <button 
+            className="btn-primary" 
+            onClick={() => setShowCloudFormationPreview(true)} 
+            title="Generate CloudFormation template"
+            disabled={nodes.length === 0}
+          >
+            <span className="icon">☁️</span> Generate CloudFormation
+          </button>
         </div>
 
         {/* Dialogs */}
@@ -649,6 +659,13 @@ export function VisualEditorPage({ initialArchitecture }: VisualEditorPageProps)
               </div>
             </div>
           </div>
+        )}
+
+        {showCloudFormationPreview && (
+          <CloudFormationPreview
+            architecture={exportArchitecture()}
+            onClose={() => setShowCloudFormationPreview(false)}
+          />
         )}
       </div>
     </>
