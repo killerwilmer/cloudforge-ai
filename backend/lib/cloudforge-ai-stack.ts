@@ -1,10 +1,10 @@
 import * as cdk from 'aws-cdk-lib'
-import { Construct } from 'constructs'
-import * as dynamodb from 'aws-cdk-lib/aws-dynamodb'
-import * as s3 from 'aws-cdk-lib/aws-s3'
-import * as cognito from 'aws-cdk-lib/aws-cognito'
 import * as apigateway from 'aws-cdk-lib/aws-apigateway'
+import * as cognito from 'aws-cdk-lib/aws-cognito'
+import * as dynamodb from 'aws-cdk-lib/aws-dynamodb'
 import * as lambda from 'aws-cdk-lib/aws-lambda'
+import * as s3 from 'aws-cdk-lib/aws-s3'
+import { Construct } from 'constructs'
 
 /**
  * Main CloudForge AI Infrastructure Stack
@@ -174,12 +174,124 @@ export class CloudForgeAIStack extends cdk.Stack {
       },
     })
 
-    // Cognito authorizer
-    const authorizer = new apigateway.CognitoUserPoolsAuthorizer(
+    // Cognito authorizer (will be used for protected routes in later tasks)
+    const _authorizer = new apigateway.CognitoUserPoolsAuthorizer(
       this,
       'CognitoAuthorizer',
       {
         cognitoUserPools: [userPool],
+      }
+    )
+
+    // ========================================
+    // Auth Lambda Functions
+    // ========================================
+
+    // Environment variables for auth Lambdas
+    const authEnv = {
+      USER_POOL_ID: userPool.userPoolId,
+      USER_POOL_CLIENT_ID: userPoolClient.userPoolClientId,
+      AWS_REGION_OVERRIDE: this.region,
+    }
+
+    // Sign up Lambda
+    const signUpLambda = new lambda.Function(this, 'SignUpFunction', {
+      runtime: lambda.Runtime.NODEJS_20_X,
+      handler: 'sign-up.handler',
+      code: lambda.Code.fromAsset('src/lambdas/auth'),
+      environment: authEnv,
+      timeout: cdk.Duration.seconds(10),
+      memorySize: 256,
+      layers: [sharedLayer],
+    })
+
+    // Sign in Lambda
+    const signInLambda = new lambda.Function(this, 'SignInFunction', {
+      runtime: lambda.Runtime.NODEJS_20_X,
+      handler: 'sign-in.handler',
+      code: lambda.Code.fromAsset('src/lambdas/auth'),
+      environment: authEnv,
+      timeout: cdk.Duration.seconds(10),
+      memorySize: 256,
+      layers: [sharedLayer],
+    })
+
+    // Sign out Lambda
+    const signOutLambda = new lambda.Function(this, 'SignOutFunction', {
+      runtime: lambda.Runtime.NODEJS_20_X,
+      handler: 'sign-out.handler',
+      code: lambda.Code.fromAsset('src/lambdas/auth'),
+      environment: authEnv,
+      timeout: cdk.Duration.seconds(10),
+      memorySize: 256,
+      layers: [sharedLayer],
+    })
+
+    // Refresh token Lambda
+    const refreshTokenLambda = new lambda.Function(
+      this,
+      'RefreshTokenFunction',
+      {
+        runtime: lambda.Runtime.NODEJS_20_X,
+        handler: 'refresh-token.handler',
+        code: lambda.Code.fromAsset('src/lambdas/auth'),
+        environment: authEnv,
+        timeout: cdk.Duration.seconds(10),
+        memorySize: 256,
+        layers: [sharedLayer],
+      }
+    )
+
+    // Grant Cognito permissions to Lambda functions
+    userPool.grant(
+      signUpLambda,
+      'cognito-idp:SignUp',
+      'cognito-idp:ConfirmSignUp'
+    )
+    userPool.grant(
+      signInLambda,
+      'cognito-idp:InitiateAuth',
+      'cognito-idp:RespondToAuthChallenge'
+    )
+    userPool.grant(signOutLambda, 'cognito-idp:GlobalSignOut')
+    userPool.grant(refreshTokenLambda, 'cognito-idp:InitiateAuth')
+
+    // ========================================
+    // API Gateway Routes
+    // ========================================
+
+    // Auth routes (public - no authorization)
+    const authResource = api.root.addResource('auth')
+
+    authResource.addResource('signup').addMethod(
+      'POST',
+      new apigateway.LambdaIntegration(signUpLambda),
+      {
+        methodResponses: [{ statusCode: '200' }, { statusCode: '400' }],
+      }
+    )
+
+    authResource.addResource('signin').addMethod(
+      'POST',
+      new apigateway.LambdaIntegration(signInLambda),
+      {
+        methodResponses: [{ statusCode: '200' }, { statusCode: '401' }],
+      }
+    )
+
+    authResource.addResource('signout').addMethod(
+      'POST',
+      new apigateway.LambdaIntegration(signOutLambda),
+      {
+        methodResponses: [{ statusCode: '200' }, { statusCode: '401' }],
+      }
+    )
+
+    authResource.addResource('refresh').addMethod(
+      'POST',
+      new apigateway.LambdaIntegration(refreshTokenLambda),
+      {
+        methodResponses: [{ statusCode: '200' }, { statusCode: '401' }],
       }
     )
 
@@ -234,9 +346,5 @@ export class CloudForgeAIStack extends cdk.Stack {
       description: 'DynamoDB Deployments table',
       exportName: 'CloudForgeDeploymentsTable',
     })
-
-    // Suppress unused variable warnings for resources that will be used later
-    void sharedLayer
-    void authorizer
   }
 }

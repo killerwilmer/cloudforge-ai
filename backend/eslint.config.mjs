@@ -3,17 +3,11 @@ import tseslint from 'typescript-eslint'
 export default tseslint.config({
   files: ['src/**/*.ts', 'lib/**/*.ts', 'bin/**/*.ts'],
   ignores: [
-    'node_modules/**',
-    'cdk.out/**',
-    'lib/**/*.d.ts',
-    'lib/**/*.js',
-    'bin/**/*.d.ts',
-    'bin/**/*.js',
-    'dist/**',
-    '*.js',
-    '*.d.ts',
     '**/*.d.ts',
     '**/*.js',
+    'node_modules/**',
+    'cdk.out/**',
+    'dist/**',
   ],
   extends: [...tseslint.configs.recommended],
   languageOptions: {

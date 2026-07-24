@@ -23,6 +23,8 @@ build/
 *.egg-info/
 .next/
 out/
+*.d.ts
+*.js.map
 
 # IDE and editors
 .vscode/
