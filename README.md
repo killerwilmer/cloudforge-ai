@@ -296,6 +296,15 @@ npm test
 3. Update documentation
 4. Create pull requests with clear descriptions
 
+## Documentation
+
+- **[QUICK_START.md](./QUICK_START.md)** - Fast-track deployment guide
+- **[DEVELOPMENT.md](./DEVELOPMENT.md)** - Development workflow and commands
+- **[FRONTEND_URLS.md](./FRONTEND_URLS.md)** - Complete frontend routes reference
+- **[TESTING.md](./TESTING.md)** - Testing strategy and commands
+- **[CHECKPOINT_DAY1-2.md](./CHECKPOINT_DAY1-2.md)** - Progress verification report
+- **[backend/API_GATEWAY.md](./backend/API_GATEWAY.md)** - API Gateway endpoints reference
+
 ## License
 
 MIT

@@ -92,6 +92,83 @@ This implementation plan prioritizes delivering a working demo by July 27, 2026 
   - Test API Gateway authorization and rate limiting
   - Ask the user if questions arise
 
+- [ ] 5.5. Implement email verification flow (authentication enhancement)
+  - [ ] 5.5.1 Create email verification Lambda function
+    - Implement confirmSignUp handler using Cognito ConfirmSignUp API
+    - Add endpoint POST /auth/verify with email and verification code
+    - Validate verification code format (6 digits)
+    - Handle expired code and invalid code errors
+    - _Requirements: 1.2, 1.3_
+  
+  - [ ] 5.5.2 Add resend verification code Lambda function
+    - Implement resendConfirmationCode handler using Cognito API
+    - Add endpoint POST /auth/resend-code with email
+    - Rate limit to prevent abuse (max 3 requests per hour per email)
+    - _Requirements: 1.2, 1.3_
+  
+  - [ ] 5.5.3 Update SignUpForm component with verification UI
+    - Add verification code input step after successful signup
+    - Display 6-digit code input with auto-focus
+    - Add "Resend Code" button with countdown timer (60 seconds)
+    - Show clear error messages for invalid/expired codes
+    - Auto-redirect to login after successful verification
+    - _Requirements: 1.2, 1.3_
+  
+  - [ ] 5.5.4 Add verification methods to auth service
+    - Implement verifyEmail(email, code) method
+    - Implement resendVerificationCode(email) method
+    - Update AuthContext to handle verification flow
+    - _Requirements: 1.2, 1.3_
+  
+  - [ ] 5.5.5 Update API Gateway routes
+    - Add POST /auth/verify route (public, no authorization)
+    - Add POST /auth/resend-code route (public, no authorization)
+    - Configure CORS for new endpoints
+    - _Requirements: 1.2, 18.4_
+  
+  - [ ] 5.5.6 Write tests for email verification
+    - Test successful verification with valid code
+    - Test verification failure with invalid code
+    - Test verification failure with expired code
+    - Test resend code functionality
+    - Test rate limiting on resend code
+    - _Requirements: 1.2, 1.3_
+
+- [ ] 5.6. Implement logout functionality (authentication enhancement)
+  - [ ] 5.6.1 Update SignOut Lambda function
+    - Verify current implementation handles global sign-out
+    - Ensure Cognito GlobalSignOut API is called
+    - Add proper error handling for invalid tokens
+    - _Requirements: 1.3, 1.5_
+  
+  - [ ] 5.6.2 Update AuthContext with logout method
+    - Implement logout() method that calls signOut API
+    - Clear all tokens from localStorage (access, ID, refresh, expiry)
+    - Reset auth state (isAuthenticated, user)
+    - Redirect to landing page after logout
+    - _Requirements: 1.3, 1.5_
+  
+  - [ ] 5.6.3 Add logout button to navigation
+    - Create Navbar component with user menu
+    - Add logout button with confirmation dialog
+    - Display user email/name in navbar
+    - Show loading state during logout
+    - _Requirements: 1.3_
+  
+  - [ ] 5.6.4 Update ProtectedRoute to handle logout
+    - Clear auth state on 401 responses
+    - Redirect to login page
+    - Show "Session expired" message if applicable
+    - _Requirements: 1.5_
+  
+  - [ ] 5.6.5 Write tests for logout functionality
+    - Test successful logout flow
+    - Test token clearing from storage
+    - Test redirect to landing page
+    - Test logout with invalid/expired token
+    - Test UI state updates after logout
+    - _Requirements: 1.3, 1.5_
+
 ### Day 3-4: Visual Editor and CloudFormation Generation (Jul 22-23)
 
 - [ ] 6. Build visual architecture editor (core feature)

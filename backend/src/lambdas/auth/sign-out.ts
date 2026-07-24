@@ -1,13 +1,13 @@
+import {
+    CognitoIdentityProviderClient,
+    GlobalSignOutCommand,
+} from '@aws-sdk/client-cognito-identity-provider'
 import { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda'
 import {
-  CognitoIdentityProviderClient,
-  GlobalSignOutCommand,
-} from '@aws-sdk/client-cognito-identity-provider'
-import {
-  logger,
-  successResponse,
-  errorResponse,
-  validationErrorResponse,
+    errorResponse,
+    logger,
+    successResponse,
+    validationErrorResponse,
 } from '../../shared/utils'
 
 // Initialize Cognito client outside handler for reuse

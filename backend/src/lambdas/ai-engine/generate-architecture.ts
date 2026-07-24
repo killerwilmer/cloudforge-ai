@@ -187,8 +187,7 @@ export async function handler(
       system: [{ text: SYSTEM_PROMPT }],
       inferenceConfig: {
         maxTokens: 4096,
-        temperature: 0.7, // Balanced creativity
-        topP: 0.9,
+        temperature: 0.7, // Balanced creativity (Claude Haiku 4.5 compatible)
       },
     })
 
@@ -222,10 +221,19 @@ export async function handler(
       responseLength: architectureText.length,
     })
 
-    // Parse JSON response
+    // Parse JSON response (strip markdown code blocks if present)
     let architecture: Architecture
     try {
-      architecture = JSON.parse(architectureText) as Architecture
+      let jsonText = architectureText.trim()
+      
+      // Remove markdown code blocks if present
+      if (jsonText.startsWith('```json')) {
+        jsonText = jsonText.replace(/^```json\s*\n?/, '').replace(/\n?```\s*$/, '')
+      } else if (jsonText.startsWith('```')) {
+        jsonText = jsonText.replace(/^```\s*\n?/, '').replace(/\n?```\s*$/, '')
+      }
+      
+      architecture = JSON.parse(jsonText) as Architecture
     } catch (parseError) {
       logger.error('Failed to parse AI response as JSON', {
         error: parseError instanceof Error ? parseError.message : 'Unknown error',

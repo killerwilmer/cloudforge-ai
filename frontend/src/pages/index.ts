@@ -4,3 +4,5 @@
 
 export * from './AuthPage'
 export * from './GenerateArchitecturePage'
+export * from './LandingPage'
+

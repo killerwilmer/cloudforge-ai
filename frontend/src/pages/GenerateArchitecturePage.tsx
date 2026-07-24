@@ -1,6 +1,7 @@
-import { useState } from 'react'
-import type { Architecture } from '@/types'
 import { architectureGeneratorService } from '@/services/ai-engine/architecture-generator.service'
+import type { Architecture } from '@/types'
+import { TokenStorage } from '@/utils/token-storage'
+import { useState } from 'react'
 import './GenerateArchitecturePage.css'
 
 const MAX_DESCRIPTION_LENGTH = 2000
@@ -24,9 +25,9 @@ export function GenerateArchitecturePage({
     totalTokens: number
   } | null>(null)
 
-  // Get access token from localStorage (from auth flow)
+  // Get ID token from TokenStorage (Cognito authorizer uses ID token, not access token)
   const getAccessToken = (): string | null => {
-    return localStorage.getItem('accessToken')
+    return TokenStorage.getIdToken()
   }
 
   const handleGenerate = async () => {

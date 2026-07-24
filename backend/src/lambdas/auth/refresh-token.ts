@@ -1,15 +1,15 @@
+import {
+    AuthFlowType,
+    CognitoIdentityProviderClient,
+    InitiateAuthCommand,
+} from '@aws-sdk/client-cognito-identity-provider'
 import { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda'
 import {
-  CognitoIdentityProviderClient,
-  InitiateAuthCommand,
-  AuthFlowType,
-} from '@aws-sdk/client-cognito-identity-provider'
-import {
-  logger,
-  successResponse,
-  errorResponse,
-  validationErrorResponse,
-  loadAuthConfig,
+    errorResponse,
+    loadAuthConfig,
+    logger,
+    successResponse,
+    validationErrorResponse,
 } from '../../shared/utils'
 
 // Initialize Cognito client outside handler for reuse
