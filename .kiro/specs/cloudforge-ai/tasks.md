@@ -47,14 +47,14 @@ This implementation plan prioritizes delivering a working demo by July 27, 2026 
     - Test session expiration and logout
     - _Requirements: 1.2, 1.3, 1.4, 1.5_
 
-- [ ] 3. Set up API Gateway and base Lambda infrastructure
-  - [ ] 3.1 Deploy API Gateway HTTP API with CDK
+- [x] 3. Set up API Gateway and base Lambda infrastructure
+  - [x] 3.1 Deploy API Gateway HTTP API with CDK
     - Configure CORS for Amplify frontend
     - Set up JWT authorizer linked to Cognito
     - Add rate limiting (100 requests/minute per user)
     - _Requirements: 18.4_
   
-  - [ ] 3.2 Create shared Lambda layer for common utilities
+  - [x] 3.2 Create shared Lambda layer for common utilities
     - Add AWS SDK clients (DynamoDB, S3, Secrets Manager, Bedrock)
     - Add error handling utilities with structured logging
     - Add request/response validation helpers
