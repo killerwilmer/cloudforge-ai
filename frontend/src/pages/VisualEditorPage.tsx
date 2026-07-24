@@ -2,6 +2,7 @@ import { Navbar } from '@/components/Navbar'
 import { CustomEdge } from '@/components/visual-editor/CustomEdge'
 import { ServiceConfigForm } from '@/components/visual-editor/ServiceConfigForm'
 import type { Architecture, AWSService, ServiceConnection } from '@/types'
+import { detectAndApplyLayout } from '@/utils/auto-layout'
 import {
     getConnectionProtocol,
     getConnectionType,
@@ -18,6 +19,7 @@ import {
     ReactFlow,
     useEdgesState,
     useNodesState,
+    useReactFlow,
     type Connection,
     type Edge,
     type EdgeTypes,
@@ -51,6 +53,7 @@ interface VisualEditorPageProps {
 
 export function VisualEditorPage({ initialArchitecture }: VisualEditorPageProps) {
   const location = useLocation()
+  const { fitView } = useReactFlow()
   const [nodes, setNodes, onNodesChange] = useNodesState([])
   const [edges, setEdges, onEdgesChange] = useEdgesState([])
   const [selectedNode, setSelectedNode] = useState<Node | null>(null)
@@ -63,6 +66,27 @@ export function VisualEditorPage({ initialArchitecture }: VisualEditorPageProps)
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [initialArchitecture, location.state])
+
+  // Keyboard shortcuts
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      // Ctrl/Cmd + L for auto-layout
+      if ((event.ctrlKey || event.metaKey) && event.key === 'l') {
+        event.preventDefault()
+        handleAutoLayout()
+      }
+      // Delete key for selected node
+      if (event.key === 'Delete' || event.key === 'Backspace') {
+        if (selectedNode && document.activeElement?.tagName !== 'INPUT') {
+          event.preventDefault()
+          deleteNode()
+        }
+      }
+    }
+
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [selectedNode]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const loadArchitecture = useCallback((architecture: Architecture) => {
     // Convert Architecture services to React Flow nodes
@@ -246,6 +270,16 @@ export function VisualEditorPage({ initialArchitecture }: VisualEditorPageProps)
     [setNodes]
   )
 
+  const handleAutoLayout = useCallback(() => {
+    const layoutedNodes = detectAndApplyLayout(nodes, edges)
+    setNodes(layoutedNodes)
+    
+    // Fit view after layout with animation
+    setTimeout(() => {
+      fitView({ duration: 300, padding: 0.1 })
+    }, 50)
+  }, [nodes, edges, setNodes, fitView])
+
   const exportArchitecture = useCallback((): Architecture => {
     const services: AWSService[] = nodes.map((node) => ({
       id: node.id,
@@ -343,6 +377,9 @@ export function VisualEditorPage({ initialArchitecture }: VisualEditorPageProps)
 
         {/* Toolbar */}
         <div className="editor-toolbar">
+          <button className="btn-secondary" onClick={handleAutoLayout} title="Auto-arrange nodes (Ctrl/Cmd + L)">
+            <span className="icon">⚡</span> Auto-Layout
+          </button>
           <button className="btn-secondary" onClick={() => console.log(exportArchitecture())}>
             Export JSON
           </button>

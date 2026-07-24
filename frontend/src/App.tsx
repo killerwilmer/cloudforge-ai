@@ -5,6 +5,7 @@ import { GenerateArchitecturePage } from '@/pages/GenerateArchitecturePage'
 import { LandingPage } from '@/pages/LandingPage'
 import { VisualEditorPage } from '@/pages/VisualEditorPage'
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
+import { ReactFlowProvider } from 'reactflow'
 import './App.css'
 
 function App() {
@@ -26,7 +27,9 @@ function App() {
             path="/editor"
             element={
               <ProtectedRoute>
-                <VisualEditorPage />
+                <ReactFlowProvider>
+                  <VisualEditorPage />
+                </ReactFlowProvider>
               </ProtectedRoute>
             }
           />

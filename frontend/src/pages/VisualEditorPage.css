@@ -260,6 +260,10 @@
   background: #333;
 }
 
+.btn-secondary .icon {
+  margin-right: 5px;
+}
+
 /* Responsive Design */
 @media (max-width: 1024px) {
   .service-palette {
