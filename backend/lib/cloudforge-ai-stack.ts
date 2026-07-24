@@ -1119,10 +1119,36 @@ export class CloudForgeAIStack extends cdk.Stack {
     stateMachine.grantStartExecution(startDeploymentLambda)
 
     // Deployment API routes
-    const deploymentsResource = apiResource.addResource('deployments')
+    const deploymentsResource = apiResource.addResource('deployments', {
+      defaultCorsPreflightOptions: {
+        allowOrigins: apigateway.Cors.ALL_ORIGINS,
+        allowMethods: apigateway.Cors.ALL_METHODS,
+        allowHeaders: [
+          'Content-Type',
+          'Authorization',
+          'X-Amz-Date',
+          'X-Api-Key',
+          'X-Amz-Security-Token',
+        ],
+      },
+    })
+
+    const startDeploymentResource = deploymentsResource.addResource('start', {
+      defaultCorsPreflightOptions: {
+        allowOrigins: apigateway.Cors.ALL_ORIGINS,
+        allowMethods: ['POST', 'OPTIONS'],
+        allowHeaders: [
+          'Content-Type',
+          'Authorization',
+          'X-Amz-Date',
+          'X-Api-Key',
+          'X-Amz-Security-Token',
+        ],
+      },
+    })
 
     // POST /api/deployments/start - Start deployment
-    deploymentsResource.addResource('start').addMethod(
+    startDeploymentResource.addMethod(
       'POST',
       new apigateway.LambdaIntegration(startDeploymentLambda, {
         timeout: cdk.Duration.seconds(29),
@@ -1155,7 +1181,19 @@ export class CloudForgeAIStack extends cdk.Stack {
     )
 
     // GET /api/deployments/{id} - Get deployment status
-    const deploymentResource = deploymentsResource.addResource('{id}')
+    const deploymentResource = deploymentsResource.addResource('{id}', {
+      defaultCorsPreflightOptions: {
+        allowOrigins: apigateway.Cors.ALL_ORIGINS,
+        allowMethods: ['GET', 'OPTIONS'],
+        allowHeaders: [
+          'Content-Type',
+          'Authorization',
+          'X-Amz-Date',
+          'X-Api-Key',
+          'X-Amz-Security-Token',
+        ],
+      },
+    })
     deploymentResource.addMethod(
       'GET',
       new apigateway.LambdaIntegration(getDeploymentLambda),

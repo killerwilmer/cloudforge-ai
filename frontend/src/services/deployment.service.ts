@@ -1,9 +1,9 @@
 import { API_CONFIG } from '@/config'
 import type {
-  Deployment,
-  DeploymentListItem,
-  StartDeploymentRequest,
-  StartDeploymentResponse,
+    Deployment,
+    DeploymentListItem,
+    StartDeploymentRequest,
+    StartDeploymentResponse,
 } from '@/types'
 import { getAuthToken } from '@/utils/auth'
 
@@ -28,7 +28,7 @@ export class DeploymentService {
       throw new Error('Authentication required')
     }
 
-    const response = await fetch(this.baseUrl, {
+    const response = await fetch(`${this.baseUrl}/start`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
