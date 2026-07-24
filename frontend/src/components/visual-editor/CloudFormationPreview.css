@@ -35,6 +35,8 @@
   align-items: center;
   gap: 20px;
   background: #f9fafb;
+  position: relative;
+  z-index: 20;
 }
 
 .format-selector {
