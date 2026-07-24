@@ -1,7 +1,10 @@
 import { Navbar } from '@/components/Navbar'
 import { CustomEdge } from '@/components/visual-editor/CustomEdge'
+import { LoadDiagramDialog } from '@/components/visual-editor/LoadDiagramDialog'
+import { SaveDiagramDialog } from '@/components/visual-editor/SaveDiagramDialog'
 import { ServiceConfigForm } from '@/components/visual-editor/ServiceConfigForm'
 import { useArchitecture } from '@/contexts/ArchitectureContext'
+import { diagramService } from '@/services/diagram.service'
 import type { Architecture, AWSService, ServiceConnection } from '@/types'
 import { detectAndApplyLayout } from '@/utils/auto-layout'
 import { AWS_SERVICES, getServiceColor, getServiceIcon } from '@/utils/aws-icons'
@@ -10,6 +13,7 @@ import {
     getConnectionType,
     validateConnection,
 } from '@/utils/connection-validator'
+import { TokenStorage } from '@/utils/token-storage'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { useLocation } from 'react-router-dom'
 import {
@@ -81,6 +85,14 @@ export function VisualEditorPage({ initialArchitecture }: VisualEditorPageProps)
   const [selectedNode, setSelectedNode] = useState<Node | null>(null)
   const [isPaletteCollapsed, setIsPaletteCollapsed] = useState(false)
   const hasChangesRef = useRef(false)
+  const autoSaveIntervalRef = useRef<number | null>(null)
+  
+  // Diagram persistence state
+  const [currentDiagramId, setCurrentDiagramId] = useState<string | null>(null)
+  const [currentDiagramName, setCurrentDiagramName] = useState<string>('Untitled Architecture')
+  const [showSaveDialog, setShowSaveDialog] = useState(false)
+  const [showLoadDialog, setShowLoadDialog] = useState(false)
+  const [showRecoveryPrompt, setShowRecoveryPrompt] = useState(false)
 
   // Load initial architecture from props, navigation state, or context
   useEffect(() => {
@@ -91,9 +103,33 @@ export function VisualEditorPage({ initialArchitecture }: VisualEditorPageProps)
     
     if (architecture) {
       loadArchitecture(architecture)
+    } else {
+      // Check for auto-save recovery
+      const autosaved = diagramService.loadFromLocalStorage()
+      if (autosaved) {
+        setShowRecoveryPrompt(true)
+      }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [initialArchitecture, location.state])
+
+  // Auto-save to localStorage every 30 seconds
+  useEffect(() => {
+    if (nodes.length === 0 && edges.length === 0) {
+      return
+    }
+
+    autoSaveIntervalRef.current = window.setInterval(() => {
+      const architecture = exportArchitecture()
+      diagramService.saveToLocalStorage(architecture, currentDiagramName)
+    }, 30000) // 30 seconds
+
+    return () => {
+      if (autoSaveIntervalRef.current) {
+        clearInterval(autoSaveIntervalRef.current)
+      }
+    }
+  }, [nodes, edges, currentDiagramName]) // eslint-disable-line react-hooks/exhaustive-deps
 
   // Keyboard shortcuts
   useEffect(() => {
@@ -421,10 +457,74 @@ export function VisualEditorPage({ initialArchitecture }: VisualEditorPageProps)
     URL.revokeObjectURL(url)
   }, [exportArchitecture])
 
+  const handleSaveDiagram = async (name: string, changeDescription?: string) => {
+    const architecture = exportArchitecture()
+    const accessToken = TokenStorage.getIdToken()
+
+    if (!accessToken) {
+      alert('Please sign in to save diagrams')
+      setShowSaveDialog(false)
+      return
+    }
+
+    try {
+      const result = await diagramService.saveDiagram(
+        {
+          diagramId: currentDiagramId || undefined,
+          name,
+          architecture,
+          changeDescription,
+        },
+        accessToken
+      )
+
+      setCurrentDiagramId(result.diagramId)
+      setCurrentDiagramName(name)
+      setShowSaveDialog(false)
+      
+      // Clear auto-save since we just saved to server
+      diagramService.clearLocalStorage()
+
+      alert(result.message)
+    } catch (error) {
+      throw error // Let dialog handle the error
+    }
+  }
+
+  const handleLoadDiagram = async (diagramId: string, _name: string) => {
+    try {
+      const result = await diagramService.getDiagram(diagramId)
+      
+      loadArchitecture(result.architecture)
+      setCurrentDiagramId(result.diagramId)
+      setCurrentDiagramName(result.name)
+      setShowLoadDialog(false)
+
+      // Clear auto-save since we just loaded a saved diagram
+      diagramService.clearLocalStorage()
+    } catch (error) {
+      throw error // Let dialog handle the error
+    }
+  }
+
+  const handleRecoverAutosave = () => {
+    const autosaved = diagramService.loadFromLocalStorage()
+    if (autosaved) {
+      loadArchitecture(autosaved.architecture)
+      setCurrentDiagramName(autosaved.name)
+      setShowRecoveryPrompt(false)
+    }
+  }
+
+  const handleDiscardAutosave = () => {
+    diagramService.clearLocalStorage()
+    setShowRecoveryPrompt(false)
+  }
+
   return (
     <>
       <Navbar />
-      <div className="visual-editor-page">
+      <div className="visual-editor-page">{/* ... existing code ... */}
         {/* Service Palette */}
         <div className={`service-palette ${isPaletteCollapsed ? 'collapsed' : ''}`}>
           <h3>AWS Services</h3>
@@ -504,10 +604,52 @@ export function VisualEditorPage({ initialArchitecture }: VisualEditorPageProps)
           <button className="btn-secondary" onClick={handleExportJSON} title="Download architecture as JSON file">
             <span className="icon">📥</span> Export JSON
           </button>
-          <button className="btn-primary" onClick={() => alert('Save functionality coming soon!')}>
-            Save Diagram
+          <button className="btn-secondary" onClick={() => setShowLoadDialog(true)} title="Load saved diagram">
+            <span className="icon">📂</span> Load
+          </button>
+          <button className="btn-primary" onClick={() => setShowSaveDialog(true)} title="Save diagram to cloud">
+            <span className="icon">💾</span> Save
           </button>
         </div>
+
+        {/* Dialogs */}
+        {showSaveDialog && (
+          <SaveDiagramDialog
+            currentName={currentDiagramId ? currentDiagramName : undefined}
+            onSave={handleSaveDiagram}
+            onCancel={() => setShowSaveDialog(false)}
+          />
+        )}
+
+        {showLoadDialog && (
+          <LoadDiagramDialog
+            onLoad={handleLoadDiagram}
+            onCancel={() => setShowLoadDialog(false)}
+          />
+        )}
+
+        {showRecoveryPrompt && (
+          <div className="dialog-overlay">
+            <div className="dialog-content">
+              <div className="dialog-header">
+                <h3>Recover Unsaved Changes?</h3>
+              </div>
+              <div className="dialog-body">
+                <p>
+                  We found an auto-saved diagram from your last session. Would you like to recover it?
+                </p>
+              </div>
+              <div className="dialog-footer">
+                <button className="btn btn-secondary" onClick={handleDiscardAutosave}>
+                  Discard
+                </button>
+                <button className="btn btn-primary" onClick={handleRecoverAutosave}>
+                  Recover
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </>
   )

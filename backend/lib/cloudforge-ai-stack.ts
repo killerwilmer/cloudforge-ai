@@ -361,6 +361,88 @@ export class CloudForgeAIStack extends cdk.Stack {
     )
 
     // ========================================
+    // Diagram Management Lambda Functions
+    // ========================================
+
+    // Environment variables for diagram Lambdas
+    const diagramEnv = {
+      DYNAMODB_DIAGRAMS_TABLE: diagramsTable.tableName,
+      S3_DIAGRAMS_BUCKET: diagramsBucket.bucketName,
+      LOG_LEVEL: 'INFO',
+    }
+
+    // Save diagram Lambda
+    const saveDiagramLambda = new lambda.Function(
+      this,
+      'SaveDiagramFunction',
+      {
+        runtime: lambda.Runtime.NODEJS_20_X,
+        handler: 'lambdas/api/save-diagram.handler',
+        code: lambda.Code.fromAsset('src'),
+        environment: diagramEnv,
+        timeout: cdk.Duration.seconds(10),
+        memorySize: 512,
+        layers: [sharedLayer],
+      }
+    )
+
+    // Get diagram Lambda
+    const getDiagramLambda = new lambda.Function(
+      this,
+      'GetDiagramFunction',
+      {
+        runtime: lambda.Runtime.NODEJS_20_X,
+        handler: 'lambdas/api/get-diagram.handler',
+        code: lambda.Code.fromAsset('src'),
+        environment: diagramEnv,
+        timeout: cdk.Duration.seconds(10),
+        memorySize: 512,
+        layers: [sharedLayer],
+      }
+    )
+
+    // List diagrams Lambda
+    const listDiagramsLambda = new lambda.Function(
+      this,
+      'ListDiagramsFunction',
+      {
+        runtime: lambda.Runtime.NODEJS_20_X,
+        handler: 'lambdas/api/list-diagrams.handler',
+        code: lambda.Code.fromAsset('src'),
+        environment: diagramEnv,
+        timeout: cdk.Duration.seconds(10),
+        memorySize: 256,
+        layers: [sharedLayer],
+      }
+    )
+
+    // Delete diagram Lambda
+    const deleteDiagramLambda = new lambda.Function(
+      this,
+      'DeleteDiagramFunction',
+      {
+        runtime: lambda.Runtime.NODEJS_20_X,
+        handler: 'lambdas/api/delete-diagram.handler',
+        code: lambda.Code.fromAsset('src'),
+        environment: diagramEnv,
+        timeout: cdk.Duration.seconds(15),
+        memorySize: 512,
+        layers: [sharedLayer],
+      }
+    )
+
+    // Grant DynamoDB permissions
+    diagramsTable.grantReadWriteData(saveDiagramLambda)
+    diagramsTable.grantReadData(getDiagramLambda)
+    diagramsTable.grantReadData(listDiagramsLambda)
+    diagramsTable.grantReadWriteData(deleteDiagramLambda)
+
+    // Grant S3 permissions
+    diagramsBucket.grantReadWrite(saveDiagramLambda)
+    diagramsBucket.grantRead(getDiagramLambda)
+    diagramsBucket.grantReadWrite(deleteDiagramLambda)
+
+    // ========================================
     // API Gateway Routes
     // ========================================
 
@@ -443,6 +525,78 @@ export class CloudForgeAIStack extends cdk.Stack {
           { statusCode: '400' },
           { statusCode: '401' },
           { statusCode: '429' },
+          { statusCode: '500' },
+        ],
+      }
+    )
+
+    // Diagram management routes
+    const diagramsResource = apiResource.addResource('diagrams')
+
+    // POST /api/diagrams - Save diagram
+    diagramsResource.addMethod(
+      'POST',
+      new apigateway.LambdaIntegration(saveDiagramLambda),
+      {
+        authorizer: authorizer,
+        authorizationType: apigateway.AuthorizationType.COGNITO,
+        methodResponses: [
+          { statusCode: '200' },
+          { statusCode: '400' },
+          { statusCode: '401' },
+          { statusCode: '500' },
+        ],
+      }
+    )
+
+    // GET /api/diagrams - List diagrams
+    diagramsResource.addMethod(
+      'GET',
+      new apigateway.LambdaIntegration(listDiagramsLambda),
+      {
+        authorizer: authorizer,
+        authorizationType: apigateway.AuthorizationType.COGNITO,
+        methodResponses: [
+          { statusCode: '200' },
+          { statusCode: '400' },
+          { statusCode: '401' },
+          { statusCode: '500' },
+        ],
+      }
+    )
+
+    // GET /api/diagrams/{diagramId} - Get diagram
+    const diagramResource = diagramsResource.addResource('{diagramId}')
+    diagramResource.addMethod(
+      'GET',
+      new apigateway.LambdaIntegration(getDiagramLambda),
+      {
+        authorizer: authorizer,
+        authorizationType: apigateway.AuthorizationType.COGNITO,
+        methodResponses: [
+          { statusCode: '200' },
+          { statusCode: '400' },
+          { statusCode: '401' },
+          { statusCode: '403' },
+          { statusCode: '404' },
+          { statusCode: '500' },
+        ],
+      }
+    )
+
+    // DELETE /api/diagrams/{diagramId} - Delete diagram
+    diagramResource.addMethod(
+      'DELETE',
+      new apigateway.LambdaIntegration(deleteDiagramLambda),
+      {
+        authorizer: authorizer,
+        authorizationType: apigateway.AuthorizationType.COGNITO,
+        methodResponses: [
+          { statusCode: '200' },
+          { statusCode: '400' },
+          { statusCode: '401' },
+          { statusCode: '403' },
+          { statusCode: '404' },
           { statusCode: '500' },
         ],
       }
