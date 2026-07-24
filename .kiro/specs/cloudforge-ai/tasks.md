@@ -134,34 +134,34 @@ This implementation plan prioritizes delivering a working demo by July 27, 2026 
     - Test rate limiting on resend code
     - _Requirements: 1.2, 1.3_
 
-- [ ] 5.6. Implement logout functionality (authentication enhancement)
-  - [ ] 5.6.1 Update SignOut Lambda function
+- [x] 5.6. Implement logout functionality (authentication enhancement)
+  - [x] 5.6.1 Update SignOut Lambda function
     - Verify current implementation handles global sign-out
     - Ensure Cognito GlobalSignOut API is called
     - Add proper error handling for invalid tokens
     - _Requirements: 1.3, 1.5_
   
-  - [ ] 5.6.2 Update AuthContext with logout method
+  - [x] 5.6.2 Update AuthContext with logout method
     - Implement logout() method that calls signOut API
     - Clear all tokens from localStorage (access, ID, refresh, expiry)
     - Reset auth state (isAuthenticated, user)
     - Redirect to landing page after logout
     - _Requirements: 1.3, 1.5_
   
-  - [ ] 5.6.3 Add logout button to navigation
+  - [x] 5.6.3 Add logout button to navigation
     - Create Navbar component with user menu
     - Add logout button with confirmation dialog
     - Display user email/name in navbar
     - Show loading state during logout
     - _Requirements: 1.3_
   
-  - [ ] 5.6.4 Update ProtectedRoute to handle logout
+  - [x] 5.6.4 Update ProtectedRoute to handle logout
     - Clear auth state on 401 responses
     - Redirect to login page
     - Show "Session expired" message if applicable
     - _Requirements: 1.5_
   
-  - [ ] 5.6.5 Write tests for logout functionality
+  - [x] 5.6.5 Write tests for logout functionality
     - Test successful logout flow
     - Test token clearing from storage
     - Test redirect to landing page
