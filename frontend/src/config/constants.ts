@@ -6,6 +6,11 @@
 export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000'
 export const API_TIMEOUT = 30000 // 30 seconds
 
+export const API_CONFIG = {
+  baseUrl: API_BASE_URL,
+  timeout: API_TIMEOUT,
+} as const
+
 // Retry Configuration
 export const MAX_RETRY_ATTEMPTS = 3
 export const RETRY_DELAY_MS = 1000
