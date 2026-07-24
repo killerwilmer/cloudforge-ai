@@ -305,28 +305,32 @@ export function getConnectionProtocol(sourceType: string, targetType: string): s
   
   const protocols: Record<string, Record<string, string>> = {
     'API Gateway': {
-      Lambda: 'HTTPS/Invoke',
-      DynamoDB: 'HTTPS/AWS Integration',
-      SQS: 'HTTPS/SendMessage',
-      Cognito: 'Authorizer',
+      Lambda: 'Invoke',
+      DynamoDB: 'Direct',
+      SQS: 'Send',
+      Cognito: 'Auth',
+      IAM: 'Role',
     },
     Lambda: {
-      DynamoDB: 'AWS SDK',
-      S3: 'AWS SDK',
-      SQS: 'AWS SDK',
-      SNS: 'AWS SDK',
-      RDS: 'TCP/SQL',
-      EventBridge: 'AWS SDK',
-      Cognito: 'AWS SDK',
+      DynamoDB: 'Read/Write',
+      S3: 'Read/Write',
+      SQS: 'Poll/Send',
+      SNS: 'Publish',
+      RDS: 'Query',
+      EventBridge: 'Publish',
+      Cognito: 'API Call',
+      IAM: 'Assume',
+      Monitoring: 'Logs/Metrics',
     },
     CloudFront: {
-      S3: 'HTTPS',
-      'API Gateway': 'HTTPS',
+      S3: 'Origin',
+      'API Gateway': 'Origin',
     },
     IAM: {
-      Lambda: 'Assume Role',
-      'API Gateway': 'Execution Role',
-      DynamoDB: 'Service Role',
+      Lambda: 'Permissions',
+      'API Gateway': 'Permissions',
+      DynamoDB: 'Permissions',
+      S3: 'Permissions',
     },
     Cognito: {
       Lambda: 'Trigger',
@@ -334,8 +338,39 @@ export function getConnectionProtocol(sourceType: string, targetType: string): s
     },
     DynamoDB: {
       Lambda: 'Stream',
+      Monitoring: 'Metrics',
+    },
+    S3: {
+      Lambda: 'Event',
+      Monitoring: 'Metrics',
+    },
+    SQS: {
+      Lambda: 'Trigger',
+      Monitoring: 'Metrics',
+    },
+    SNS: {
+      Lambda: 'Trigger',
+      Monitoring: 'Metrics',
+    },
+    EventBridge: {
+      Lambda: 'Trigger',
+      Monitoring: 'Metrics',
+    },
+    RDS: {
+      Lambda: 'Connection',
+      Monitoring: 'Metrics',
+    },
+    Monitoring: {
+      Lambda: 'Watch',
+      'API Gateway': 'Watch',
+      DynamoDB: 'Watch',
+      S3: 'Watch',
+      SQS: 'Watch',
+      SNS: 'Watch',
+      EventBridge: 'Watch',
+      RDS: 'Watch',
     },
   }
 
-  return protocols[normalizedSource]?.[normalizedTarget] || 'AWS'
+  return protocols[normalizedSource]?.[normalizedTarget] || ''
 }

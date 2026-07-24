@@ -1,4 +1,3 @@
-import { getConnectionDescription } from '@/utils/connection-validator'
 import { BaseEdge, EdgeLabelRenderer, getSmoothStepPath, type EdgeProps } from 'reactflow'
 import './CustomEdge.css'
 
@@ -23,12 +22,8 @@ export function CustomEdge({
     targetPosition,
   })
 
-  const sourceType = data?.sourceType as string
-  const targetType = data?.targetType as string
   const isValid = data?.isValid !== false
   const connectionType = data?.connectionType as string
-
-  const description = sourceType && targetType ? getConnectionDescription(sourceType, targetType) : ''
 
   // Determine edge color based on connection type
   const getEdgeColor = () => {
@@ -70,14 +65,9 @@ export function CustomEdge({
           }}
           className={`custom-edge-label ${!isValid ? 'invalid' : ''}`}
         >
-          {data?.protocol && (
+          {data?.protocol && data.protocol.trim() && (
             <div className="edge-protocol" style={{ background: edgeColor }}>
               {data.protocol}
-            </div>
-          )}
-          {description && (
-            <div className="edge-description" title={description}>
-              {description}
             </div>
           )}
           {!isValid && data?.reason && (
