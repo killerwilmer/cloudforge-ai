@@ -93,13 +93,9 @@ export function CloudFormationPreview({ architecture, onClose }: CloudFormationP
 
     try {
       const result = await deploymentService.startDeployment({
+        templateBody: template,
         stackName,
         region: 'us-east-1', // Default region, could be made configurable
-        template,
-        tags: {
-          Application: 'CloudForge',
-          ManagedBy: 'CloudForgeAI',
-        },
       })
 
       // Navigate to deployment status page

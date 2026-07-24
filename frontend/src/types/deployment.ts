@@ -82,11 +82,11 @@ export interface DeploymentListItem {
 }
 
 export interface StartDeploymentRequest {
+  templateBody: string
   stackName: string
   region: string
-  template: string
-  parameters?: Record<string, string>
-  tags?: Record<string, string>
+  parameters?: Array<{ ParameterKey: string; ParameterValue: string }>
+  diagramId?: string
 }
 
 export interface StartDeploymentResponse {
