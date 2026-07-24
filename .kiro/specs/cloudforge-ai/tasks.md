@@ -246,7 +246,7 @@ This implementation plan prioritizes delivering a working demo by July 27, 2026 
     - Implement pretty printer with consistent formatting
     - _Requirements: 6.1, 6.2, 6.3, 6.5_
   
-  - [ ] 8.3 Write property test for CloudFormation round-trip equivalence
+  - [x] 8.3 Write property test for CloudFormation round-trip equivalence
     - **Property 4: CloudFormation Round-Trip Equivalence**
     - **Validates: Requirements 6.4**
     - Generate random valid CloudFormation representations
@@ -259,7 +259,7 @@ This implementation plan prioritizes delivering a working demo by July 27, 2026 
     - Add "Copy to Clipboard" and "Download" buttons
     - _Requirements: 5.6_
   
-  - [ ] 8.5 Write unit tests for CloudFormation generation
+  - [x] 8.5 Write unit tests for CloudFormation generation
     - Test service mapping for Lambda, API Gateway, DynamoDB, S3
     - Test dependency generation
     - Test validation and error handling
