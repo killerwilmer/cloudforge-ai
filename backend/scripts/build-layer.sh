@@ -30,7 +30,8 @@ cat > $LAYER_DIR/nodejs/package.json << 'EOF'
     "@aws-sdk/client-cloudformation": "^3.0.0",
     "@aws-sdk/client-sts": "^3.0.0",
     "@aws-sdk/client-pricing": "^3.0.0",
-    "@aws-sdk/lib-dynamodb": "^3.0.0"
+    "@aws-sdk/lib-dynamodb": "^3.0.0",
+    "yaml": "^2.0.0"
   }
 }
 EOF
