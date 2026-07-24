@@ -3,6 +3,7 @@ import { CustomEdge } from '@/components/visual-editor/CustomEdge'
 import { ServiceConfigForm } from '@/components/visual-editor/ServiceConfigForm'
 import type { Architecture, AWSService, ServiceConnection } from '@/types'
 import { detectAndApplyLayout } from '@/utils/auto-layout'
+import { AWS_SERVICES, getServiceColor, getServiceIcon } from '@/utils/aws-icons'
 import {
     getConnectionProtocol,
     getConnectionType,
@@ -27,20 +28,6 @@ import {
 } from 'reactflow'
 import 'reactflow/dist/style.css'
 import './VisualEditorPage.css'
-
-// AWS Service types and their colors
-const AWS_SERVICES = [
-  { type: 'Lambda', color: '#FF9900', icon: 'λ' },
-  { type: 'API Gateway', color: '#C925D1', icon: '🌐' },
-  { type: 'DynamoDB', color: '#527FFF', icon: '📊' },
-  { type: 'S3', color: '#569A31', icon: '🪣' },
-  { type: 'Cognito', color: '#DD344C', icon: '👤' },
-  { type: 'SQS', color: '#FF4F8B', icon: '📬' },
-  { type: 'SNS', color: '#B7CA9D', icon: '📢' },
-  { type: 'EventBridge', color: '#FF4F8B', icon: '🔀' },
-  { type: 'RDS', color: '#527FFF', icon: '🗄️' },
-  { type: 'CloudFront', color: '#8C4FFF', icon: '🌍' },
-]
 
 // Define custom edge types
 const edgeTypes: EdgeTypes = {
@@ -90,25 +77,35 @@ export function VisualEditorPage({ initialArchitecture }: VisualEditorPageProps)
 
   const loadArchitecture = useCallback((architecture: Architecture) => {
     // Convert Architecture services to React Flow nodes
-    const newNodes: Node[] = architecture.services.map((service) => ({
-      id: service.id,
-      type: 'default',
-      position: service.position,
-      data: {
-        label: service.name,
-        serviceType: service.type,
-        configuration: service.configuration,
-      },
-      style: {
-        background: AWS_SERVICES.find((s) => s.type === service.type)?.color || '#666',
-        color: 'white',
-        border: '2px solid #222',
-        borderRadius: '8px',
-        padding: '10px',
-        fontSize: '12px',
-        fontWeight: 'bold',
-      },
-    }))
+    const newNodes: Node[] = architecture.services.map((service) => {
+      const ServiceIcon = getServiceIcon(service.type)
+      const color = getServiceColor(service.type)
+      
+      return {
+        id: service.id,
+        type: 'default',
+        position: service.position,
+        data: {
+          label: (
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <ServiceIcon size={20} />
+              <span>{service.name}</span>
+            </div>
+          ),
+          serviceType: service.type,
+          configuration: service.configuration,
+        },
+        style: {
+          background: color,
+          color: 'white',
+          border: '2px solid #222',
+          borderRadius: '8px',
+          padding: '10px',
+          fontSize: '12px',
+          fontWeight: 'bold',
+        },
+      }
+    })
 
     // Convert connections to React Flow edges with validation
     const newEdges: Edge[] = architecture.connections.map((conn) => {
@@ -215,12 +212,19 @@ export function VisualEditorPage({ initialArchitecture }: VisualEditorPageProps)
       const service = AWS_SERVICES.find((s) => s.type === serviceType)
       if (!service) return
 
+      const ServiceIcon = service.icon
+
       const newNode: Node = {
         id: `${serviceType}-${Date.now()}`,
         type: 'default',
         position,
         data: {
-          label: `${service.icon} ${serviceType}`,
+          label: (
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <ServiceIcon size={20} />
+              <span>{serviceType}</span>
+            </div>
+          ),
           serviceType: serviceType,
           configuration: {},
         },
@@ -333,18 +337,23 @@ export function VisualEditorPage({ initialArchitecture }: VisualEditorPageProps)
           <h3>AWS Services</h3>
           <p className="palette-hint">Drag services to canvas</p>
           <div className="service-list">
-            {AWS_SERVICES.map((service) => (
-              <div
-                key={service.type}
-                className="service-item"
-                draggable
-                onDragStart={(e) => onDragStart(e, service.type)}
-                style={{ borderLeft: `4px solid ${service.color}` }}
-              >
-                <span className="service-icon">{service.icon}</span>
-                <span className="service-name">{service.type}</span>
-              </div>
-            ))}
+            {AWS_SERVICES.map((service) => {
+              const ServiceIcon = service.icon
+              return (
+                <div
+                  key={service.type}
+                  className="service-item"
+                  draggable
+                  onDragStart={(e) => onDragStart(e, service.type)}
+                  style={{ borderLeft: `4px solid ${service.color}` }}
+                >
+                  <span className="service-icon">
+                    <ServiceIcon size={18} />
+                  </span>
+                  <span className="service-name">{service.displayName || service.type}</span>
+                </div>
+              )
+            })}
           </div>
         </div>
 
