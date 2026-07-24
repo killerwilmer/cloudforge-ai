@@ -53,7 +53,7 @@ interface VisualEditorPageProps {
 
 export function VisualEditorPage({ initialArchitecture }: VisualEditorPageProps) {
   const location = useLocation()
-  const { fitView } = useReactFlow()
+  const { fitView, screenToFlowPosition } = useReactFlow()
   const [nodes, setNodes, onNodesChange] = useNodesState([])
   const [edges, setEdges, onEdgesChange] = useEdgesState([])
   const [selectedNode, setSelectedNode] = useState<Node | null>(null)
@@ -206,10 +206,11 @@ export function VisualEditorPage({ initialArchitecture }: VisualEditorPageProps)
       const serviceType = event.dataTransfer.getData('application/reactflow')
       if (!serviceType) return
 
-      const position = {
-        x: event.clientX - 250,
-        y: event.clientY - 100,
-      }
+      // Convert screen coordinates to React Flow coordinates
+      const position = screenToFlowPosition({
+        x: event.clientX,
+        y: event.clientY,
+      })
 
       const service = AWS_SERVICES.find((s) => s.type === serviceType)
       if (!service) return
@@ -236,7 +237,7 @@ export function VisualEditorPage({ initialArchitecture }: VisualEditorPageProps)
 
       setNodes((nds) => nds.concat(newNode))
     },
-    [setNodes]
+    [screenToFlowPosition, setNodes]
   )
 
   const onDragStart = (event: React.DragEvent, serviceType: string) => {
