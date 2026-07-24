@@ -171,7 +171,7 @@ export class CloudForgeAIStack extends cdk.Stack {
         throttlingBurstLimit: 200, // Max concurrent requests
         throttlingRateLimit: 100, // 100 requests per second base limit
         metricsEnabled: true,
-        loggingLevel: apigateway.MethodLoggingLevel.INFO,
+        loggingLevel: apigateway.MethodLoggingLevel.OFF, // Disabled for initial deployment
         dataTraceEnabled: false, // Don't log full request/response (PII)
       },
       defaultCorsPreflightOptions: {
