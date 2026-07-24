@@ -1,0 +1,61 @@
+.service-config-form {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+.config-divider {
+  height: 1px;
+  background: #333;
+  margin: 10px 0;
+}
+
+.config-section-title {
+  color: #fff;
+  font-size: 14px;
+  font-weight: 600;
+  margin: 5px 0 10px 0;
+}
+
+.form-hint {
+  display: block;
+  color: #888;
+  font-size: 11px;
+  margin-top: 4px;
+}
+
+.no-config {
+  padding: 20px;
+  text-align: center;
+}
+
+.no-config p {
+  color: #888;
+  font-size: 13px;
+}
+
+/* Validation styles */
+.form-group input:invalid,
+.form-group select:invalid {
+  border-color: #da3633;
+}
+
+.form-group input:valid,
+.form-group select:valid {
+  border-color: #444;
+}
+
+.form-group input:focus:valid {
+  border-color: #0969da;
+}
+
+/* Number input styling */
+input[type='number'] {
+  -moz-appearance: textfield;
+}
+
+input[type='number']::-webkit-inner-spin-button,
+input[type='number']::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}

@@ -1,4 +1,5 @@
 import { Navbar } from '@/components/Navbar'
+import { ServiceConfigForm } from '@/components/visual-editor/ServiceConfigForm'
 import type { Architecture, AWSService, ServiceConnection } from '@/types'
 import { useCallback, useEffect, useState } from 'react'
 import { useLocation } from 'react-router-dom'
@@ -157,6 +158,24 @@ export function VisualEditorPage({ initialArchitecture }: VisualEditorPageProps)
     setSelectedNode(null)
   }, [selectedNode, setNodes, setEdges])
 
+  const updateNodeConfig = useCallback(
+    (nodeId: string, config: Record<string, unknown>) => {
+      setNodes((nds) =>
+        nds.map((n) => (n.id === nodeId ? { ...n, data: { ...n.data, configuration: config } } : n))
+      )
+    },
+    [setNodes]
+  )
+
+  const updateNodeName = useCallback(
+    (nodeId: string, name: string) => {
+      setNodes((nds) =>
+        nds.map((n) => (n.id === nodeId ? { ...n, data: { ...n.data, label: name } } : n))
+      )
+    },
+    [setNodes]
+  )
+
   const exportArchitecture = useCallback((): Architecture => {
     const services: AWSService[] = nodes.map((node) => ({
       id: node.id,
@@ -239,31 +258,11 @@ export function VisualEditorPage({ initialArchitecture }: VisualEditorPageProps)
               </button>
             </div>
             <div className="panel-content">
-              <div className="form-group">
-                <label>Service Type</label>
-                <input
-                  type="text"
-                  value={selectedNode.data.serviceType as string}
-                  disabled
-                  className="input-disabled"
-                />
-              </div>
-              <div className="form-group">
-                <label>Name</label>
-                <input
-                  type="text"
-                  value={selectedNode.data.label as string}
-                  onChange={(e) => {
-                    setNodes((nds) =>
-                      nds.map((n) =>
-                        n.id === selectedNode.id
-                          ? { ...n, data: { ...n.data, label: e.target.value } }
-                          : n
-                      )
-                    )
-                  }}
-                />
-              </div>
+              <ServiceConfigForm
+                node={selectedNode}
+                onConfigChange={updateNodeConfig}
+                onNameChange={updateNodeName}
+              />
               <button className="btn-danger" onClick={deleteNode}>
                 Delete Service
               </button>
