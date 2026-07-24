@@ -117,6 +117,46 @@ export class AuthService {
   }
 
   /**
+   * Verify email with confirmation code
+   */
+  async verifyEmail(email: string, code: string): Promise<{ message: string }> {
+    const response = await fetch(`${this.baseUrl}/verify`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ email, code }),
+    })
+
+    if (!response.ok) {
+      const error = await response.json()
+      throw new Error(error.message || 'Email verification failed')
+    }
+
+    return response.json()
+  }
+
+  /**
+   * Resend verification code
+   */
+  async resendVerificationCode(email: string): Promise<{ message: string }> {
+    const response = await fetch(`${this.baseUrl}/resend-code`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ email }),
+    })
+
+    if (!response.ok) {
+      const error = await response.json()
+      throw new Error(error.message || 'Failed to resend verification code')
+    }
+
+    return response.json()
+  }
+
+  /**
    * Decode JWT token to get user info
    */
   decodeToken(idToken: string): User {

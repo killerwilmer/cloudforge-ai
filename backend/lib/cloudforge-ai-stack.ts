@@ -199,25 +199,23 @@ export class CloudForgeAIStack extends cdk.Stack {
       }
     )
 
-    // Export authorizer for use in protected routes (will be used in Task 4)
-    void authorizer
-
     // ========================================
     // Auth Lambda Functions
     // ========================================
 
     // Environment variables for auth Lambdas
     const authEnv = {
-      USER_POOL_ID: userPool.userPoolId,
-      USER_POOL_CLIENT_ID: userPoolClient.userPoolClientId,
-      AWS_REGION_OVERRIDE: this.region,
+      COGNITO_USER_POOL_ID: userPool.userPoolId,
+      COGNITO_CLIENT_ID: userPoolClient.userPoolClientId,
+      DYNAMODB_USERS_TABLE: usersTable.tableName,
+      LOG_LEVEL: 'INFO',
     }
 
     // Sign up Lambda
     const signUpLambda = new lambda.Function(this, 'SignUpFunction', {
       runtime: lambda.Runtime.NODEJS_20_X,
-      handler: 'sign-up.handler',
-      code: lambda.Code.fromAsset('src/lambdas/auth'),
+      handler: 'lambdas/auth/sign-up.handler',
+      code: lambda.Code.fromAsset('src'),
       environment: authEnv,
       timeout: cdk.Duration.seconds(10),
       memorySize: 256,
@@ -227,8 +225,8 @@ export class CloudForgeAIStack extends cdk.Stack {
     // Sign in Lambda
     const signInLambda = new lambda.Function(this, 'SignInFunction', {
       runtime: lambda.Runtime.NODEJS_20_X,
-      handler: 'sign-in.handler',
-      code: lambda.Code.fromAsset('src/lambdas/auth'),
+      handler: 'lambdas/auth/sign-in.handler',
+      code: lambda.Code.fromAsset('src'),
       environment: authEnv,
       timeout: cdk.Duration.seconds(10),
       memorySize: 256,
@@ -238,8 +236,8 @@ export class CloudForgeAIStack extends cdk.Stack {
     // Sign out Lambda
     const signOutLambda = new lambda.Function(this, 'SignOutFunction', {
       runtime: lambda.Runtime.NODEJS_20_X,
-      handler: 'sign-out.handler',
-      code: lambda.Code.fromAsset('src/lambdas/auth'),
+      handler: 'lambdas/auth/sign-out.handler',
+      code: lambda.Code.fromAsset('src'),
       environment: authEnv,
       timeout: cdk.Duration.seconds(10),
       memorySize: 256,
@@ -252,8 +250,38 @@ export class CloudForgeAIStack extends cdk.Stack {
       'RefreshTokenFunction',
       {
         runtime: lambda.Runtime.NODEJS_20_X,
-        handler: 'refresh-token.handler',
-        code: lambda.Code.fromAsset('src/lambdas/auth'),
+        handler: 'lambdas/auth/refresh-token.handler',
+        code: lambda.Code.fromAsset('src'),
+        environment: authEnv,
+        timeout: cdk.Duration.seconds(10),
+        memorySize: 256,
+        layers: [sharedLayer],
+      }
+    )
+
+    // Verify email Lambda
+    const verifyEmailLambda = new lambda.Function(
+      this,
+      'VerifyEmailFunction',
+      {
+        runtime: lambda.Runtime.NODEJS_20_X,
+        handler: 'lambdas/auth/verify-email.handler',
+        code: lambda.Code.fromAsset('src'),
+        environment: authEnv,
+        timeout: cdk.Duration.seconds(10),
+        memorySize: 256,
+        layers: [sharedLayer],
+      }
+    )
+
+    // Resend verification code Lambda
+    const resendCodeLambda = new lambda.Function(
+      this,
+      'ResendCodeFunction',
+      {
+        runtime: lambda.Runtime.NODEJS_20_X,
+        handler: 'lambdas/auth/resend-code.handler',
+        code: lambda.Code.fromAsset('src'),
         environment: authEnv,
         timeout: cdk.Duration.seconds(10),
         memorySize: 256,
@@ -274,6 +302,14 @@ export class CloudForgeAIStack extends cdk.Stack {
     )
     userPool.grant(signOutLambda, 'cognito-idp:GlobalSignOut')
     userPool.grant(refreshTokenLambda, 'cognito-idp:InitiateAuth')
+    userPool.grant(verifyEmailLambda, 'cognito-idp:ConfirmSignUp')
+    userPool.grant(
+      resendCodeLambda,
+      'cognito-idp:ResendConfirmationCode'
+    )
+
+    // Grant DynamoDB permissions for rate limiting in resend-code Lambda
+    usersTable.grantReadWriteData(resendCodeLambda)
 
     // ========================================
     // AI Engine Lambda Function
@@ -281,9 +317,9 @@ export class CloudForgeAIStack extends cdk.Stack {
 
     // Environment variables for AI Lambda
     const aiEnv = {
-      BEDROCK_MODEL_ID: process.env.BEDROCK_MODEL_ID || 'anthropic.claude-3-5-sonnet-20241022-v2:0',
+      BEDROCK_MODEL_ID: process.env.BEDROCK_MODEL_ID || 'us.anthropic.claude-haiku-4-5-20251001-v1:0',
       BEDROCK_REGION: process.env.BEDROCK_REGION || 'us-east-1',
-      AWS_REGION_OVERRIDE: this.region,
+      DYNAMODB_USERS_TABLE: usersTable.tableName,
       LOG_LEVEL: 'INFO',
     }
 
@@ -293,8 +329,8 @@ export class CloudForgeAIStack extends cdk.Stack {
       'GenerateArchitectureFunction',
       {
         runtime: lambda.Runtime.NODEJS_20_X,
-        handler: 'generate-architecture.handler',
-        code: lambda.Code.fromAsset('src/lambdas/ai-engine'),
+        handler: 'lambdas/ai-engine/generate-architecture.handler',
+        code: lambda.Code.fromAsset('src'),
         environment: aiEnv,
         timeout: cdk.Duration.seconds(30), // 30s for AI generation
         memorySize: 1024, // More memory for JSON parsing
@@ -302,14 +338,25 @@ export class CloudForgeAIStack extends cdk.Stack {
       }
     )
 
-    // Grant Bedrock permissions
+    // Grant Bedrock permissions (foundation models + inference profiles, all regions)
+    // Note: Inference profiles may route to different regions, so we allow all regions
     generateArchitectureLambda.addToRolePolicy(
       new iam.PolicyStatement({
         effect: iam.Effect.ALLOW,
         actions: ['bedrock:InvokeModel', 'bedrock:InvokeModelWithResponseStream'],
         resources: [
-          `arn:aws:bedrock:${aiEnv.BEDROCK_REGION}::foundation-model/${aiEnv.BEDROCK_MODEL_ID}`,
+          `arn:aws:bedrock:*::foundation-model/*`,
+          `arn:aws:bedrock:*:${this.account}:inference-profile/*`,
         ],
+      })
+    )
+
+    // Grant AWS Marketplace permissions for model access
+    generateArchitectureLambda.addToRolePolicy(
+      new iam.PolicyStatement({
+        effect: iam.Effect.ALLOW,
+        actions: ['aws-marketplace:ViewSubscriptions', 'aws-marketplace:Subscribe'],
+        resources: ['*'],
       })
     )
 
@@ -352,6 +399,32 @@ export class CloudForgeAIStack extends cdk.Stack {
       }
     )
 
+    authResource.addResource('verify').addMethod(
+      'POST',
+      new apigateway.LambdaIntegration(verifyEmailLambda),
+      {
+        methodResponses: [
+          { statusCode: '200' },
+          { statusCode: '400' },
+          { statusCode: '404' },
+          { statusCode: '429' },
+        ],
+      }
+    )
+
+    authResource.addResource('resend-code').addMethod(
+      'POST',
+      new apigateway.LambdaIntegration(resendCodeLambda),
+      {
+        methodResponses: [
+          { statusCode: '200' },
+          { statusCode: '400' },
+          { statusCode: '404' },
+          { statusCode: '429' },
+        ],
+      }
+    )
+
     // API routes (protected - require authorization)
     const apiResource = api.root.addResource('api')
     const architecturesResource = apiResource.addResource('architectures')
@@ -368,11 +441,33 @@ export class CloudForgeAIStack extends cdk.Stack {
         methodResponses: [
           { statusCode: '200' },
           { statusCode: '400' },
+          { statusCode: '401' },
           { statusCode: '429' },
           { statusCode: '500' },
         ],
       }
     )
+
+    // Add Gateway Responses to include CORS headers for auth failures
+    api.addGatewayResponse('Unauthorized', {
+      type: apigateway.ResponseType.UNAUTHORIZED,
+      statusCode: '401',
+      responseHeaders: {
+        'Access-Control-Allow-Origin': "'*'",
+        'Access-Control-Allow-Headers': "'Content-Type,Authorization'",
+        'Access-Control-Allow-Methods': "'OPTIONS,POST,GET,PUT,DELETE'",
+      },
+    })
+
+    api.addGatewayResponse('AccessDenied', {
+      type: apigateway.ResponseType.ACCESS_DENIED,
+      statusCode: '403',
+      responseHeaders: {
+        'Access-Control-Allow-Origin': "'*'",
+        'Access-Control-Allow-Headers': "'Content-Type,Authorization'",
+        'Access-Control-Allow-Methods': "'OPTIONS,POST,GET,PUT,DELETE'",
+      },
+    })
 
     // ========================================
     // API Gateway Usage Plan & Rate Limiting
