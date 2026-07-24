@@ -1,6 +1,12 @@
 import { Navbar } from '@/components/Navbar'
+import { CustomEdge } from '@/components/visual-editor/CustomEdge'
 import { ServiceConfigForm } from '@/components/visual-editor/ServiceConfigForm'
 import type { Architecture, AWSService, ServiceConnection } from '@/types'
+import {
+    getConnectionProtocol,
+    getConnectionType,
+    validateConnection,
+} from '@/utils/connection-validator'
 import { useCallback, useEffect, useState } from 'react'
 import { useLocation } from 'react-router-dom'
 import {
@@ -14,6 +20,7 @@ import {
     useNodesState,
     type Connection,
     type Edge,
+    type EdgeTypes,
     type Node,
 } from 'reactflow'
 import 'reactflow/dist/style.css'
@@ -32,6 +39,11 @@ const AWS_SERVICES = [
   { type: 'RDS', color: '#527FFF', icon: '🗄️' },
   { type: 'CloudFront', color: '#8C4FFF', icon: '🌍' },
 ]
+
+// Define custom edge types
+const edgeTypes: EdgeTypes = {
+  custom: CustomEdge,
+}
 
 interface VisualEditorPageProps {
   initialArchitecture?: Architecture
@@ -74,16 +86,34 @@ export function VisualEditorPage({ initialArchitecture }: VisualEditorPageProps)
       },
     }))
 
-    // Convert connections to React Flow edges
-    const newEdges: Edge[] = architecture.connections.map((conn) => ({
-      id: conn.id,
-      source: conn.sourceId,
-      target: conn.targetId,
-      type: conn.type === 'sync' ? 'default' : 'step',
-      animated: conn.type === 'async',
-      style: { stroke: '#555', strokeWidth: 2 },
-      label: conn.protocol || undefined,
-    }))
+    // Convert connections to React Flow edges with validation
+    const newEdges: Edge[] = architecture.connections.map((conn) => {
+      const sourceNode = architecture.services.find((s) => s.id === conn.sourceId)
+      const targetNode = architecture.services.find((s) => s.id === conn.targetId)
+      
+      const sourceType = sourceNode?.type || ''
+      const targetType = targetNode?.type || ''
+      
+      const validation = validateConnection(sourceType, targetType)
+      const connType = conn.type || getConnectionType(sourceType, targetType)
+      const protocol = conn.protocol || getConnectionProtocol(sourceType, targetType)
+
+      return {
+        id: conn.id,
+        source: conn.sourceId,
+        target: conn.targetId,
+        type: 'custom',
+        animated: connType === 'async',
+        data: {
+          sourceType,
+          targetType,
+          connectionType: connType,
+          protocol,
+          isValid: validation.allowed,
+          reason: validation.reason,
+        },
+      }
+    })
 
     setNodes(newNodes)
     setEdges(newEdges)
@@ -91,9 +121,49 @@ export function VisualEditorPage({ initialArchitecture }: VisualEditorPageProps)
 
   const onConnect = useCallback(
     (params: Connection) => {
-      setEdges((eds) => addEdge({ ...params, animated: true }, eds))
+      if (!params.source || !params.target) return
+
+      // Find source and target nodes
+      const sourceNode = nodes.find((n) => n.id === params.source)
+      const targetNode = nodes.find((n) => n.id === params.target)
+
+      if (!sourceNode || !targetNode) return
+
+      const sourceType = sourceNode.data.serviceType as string
+      const targetType = targetNode.data.serviceType as string
+
+      // Validate connection
+      const validation = validateConnection(sourceType, targetType)
+      const connType = getConnectionType(sourceType, targetType)
+      const protocol = getConnectionProtocol(sourceType, targetType)
+
+      // Create new edge with validation data
+      const newEdge: Edge = {
+        id: `${params.source}-${params.target}-${Date.now()}`,
+        source: params.source,
+        target: params.target,
+        type: 'custom',
+        animated: connType === 'async',
+        data: {
+          sourceType,
+          targetType,
+          connectionType: connType,
+          protocol,
+          isValid: validation.allowed,
+          reason: validation.reason,
+        },
+      }
+
+      setEdges((eds) => addEdge(newEdge, eds))
+
+      // Show warning for invalid connections
+      if (!validation.allowed) {
+        setTimeout(() => {
+          alert(`Warning: ${validation.reason}\n\nThis connection may not work in a real AWS environment.`)
+        }, 100)
+      }
     },
-    [setEdges]
+    [nodes, setEdges]
   )
 
   const onNodeClick = useCallback((_event: React.MouseEvent, node: Node) => {
@@ -240,6 +310,7 @@ export function VisualEditorPage({ initialArchitecture }: VisualEditorPageProps)
             onNodeClick={onNodeClick}
             onDrop={onDrop}
             onDragOver={onDragOver}
+            edgeTypes={edgeTypes}
             fitView
           >
             <Background variant={BackgroundVariant.Dots} gap={12} size={1} />
