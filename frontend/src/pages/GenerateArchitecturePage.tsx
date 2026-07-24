@@ -1,8 +1,9 @@
 import { Navbar } from '@/components/Navbar'
+import { useArchitecture } from '@/contexts/ArchitectureContext'
 import { architectureGeneratorService } from '@/services/ai-engine/architecture-generator.service'
 import type { Architecture } from '@/types'
 import { TokenStorage } from '@/utils/token-storage'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import './GenerateArchitecturePage.css'
 
@@ -17,6 +18,7 @@ export function GenerateArchitecturePage({
   onArchitectureGenerated,
 }: GenerateArchitecturePageProps) {
   const navigate = useNavigate()
+  const { architecture: contextArchitecture, setArchitecture: setContextArchitecture } = useArchitecture()
   const [description, setDescription] = useState('')
   const [isGenerating, setIsGenerating] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -27,6 +29,13 @@ export function GenerateArchitecturePage({
     outputTokens: number
     totalTokens: number
   } | null>(null)
+
+  // Load architecture from context on mount
+  useEffect(() => {
+    if (contextArchitecture && !generatedArchitecture) {
+      setGeneratedArchitecture(contextArchitecture)
+    }
+  }, [contextArchitecture, generatedArchitecture])
 
   // Get ID token from TokenStorage (Cognito authorizer uses ID token, not access token)
   const getAccessToken = (): string | null => {
@@ -67,6 +76,7 @@ export function GenerateArchitecturePage({
       )
 
       setGeneratedArchitecture(response.architecture)
+      setContextArchitecture(response.architecture) // Save to context
       setTokenUsage(response.usage)
 
       // Notify parent component if callback provided
@@ -86,6 +96,7 @@ export function GenerateArchitecturePage({
     setDescription('')
     setError(null)
     setGeneratedArchitecture(null)
+    setContextArchitecture(null) // Clear from context
     setTokenUsage(null)
   }
 

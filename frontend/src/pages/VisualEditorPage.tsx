@@ -1,6 +1,7 @@
 import { Navbar } from '@/components/Navbar'
 import { CustomEdge } from '@/components/visual-editor/CustomEdge'
 import { ServiceConfigForm } from '@/components/visual-editor/ServiceConfigForm'
+import { useArchitecture } from '@/contexts/ArchitectureContext'
 import type { Architecture, AWSService, ServiceConnection } from '@/types'
 import { detectAndApplyLayout } from '@/utils/auto-layout'
 import { AWS_SERVICES, getServiceColor, getServiceIcon } from '@/utils/aws-icons'
@@ -73,20 +74,34 @@ interface VisualEditorPageProps {
 
 export function VisualEditorPage({ initialArchitecture }: VisualEditorPageProps) {
   const location = useLocation()
+  const { architecture: contextArchitecture, setArchitecture: setContextArchitecture } = useArchitecture()
   const { fitView, screenToFlowPosition } = useReactFlow()
   const [nodes, setNodes, onNodesChange] = useNodesState([])
   const [edges, setEdges, onEdgesChange] = useEdgesState([])
   const [selectedNode, setSelectedNode] = useState<Node | null>(null)
   const [isPaletteCollapsed, setIsPaletteCollapsed] = useState(false)
 
-  // Load initial architecture from props or navigation state
+  // Load initial architecture from props, navigation state, or context
   useEffect(() => {
-    const architecture = initialArchitecture || (location.state as { architecture?: Architecture })?.architecture
+    const architecture = 
+      initialArchitecture || 
+      (location.state as { architecture?: Architecture })?.architecture ||
+      contextArchitecture
+    
     if (architecture) {
       loadArchitecture(architecture)
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [initialArchitecture, location.state])
+  }, [initialArchitecture, location.state, contextArchitecture])
+
+  // Sync changes back to context whenever nodes or edges change
+  useEffect(() => {
+    if (nodes.length > 0 || edges.length > 0) {
+      const currentArchitecture = exportArchitecture()
+      setContextArchitecture(currentArchitecture)
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [nodes, edges])
 
   // Keyboard shortcuts
   useEffect(() => {
