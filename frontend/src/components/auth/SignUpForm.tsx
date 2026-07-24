@@ -1,13 +1,14 @@
 import { useAuth } from '@/contexts/AuthContext'
+import { authService } from '@/services/auth.service'
 import { isValidEmail } from '@/utils/validation'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 
 interface SignUpFormProps {
   onSuccess?: () => void
   onSwitchToLogin?: () => void
 }
 
-export function SignUpForm({ onSuccess, onSwitchToLogin }: SignUpFormProps) {
+export function SignUpForm({ onSuccess: _onSuccess, onSwitchToLogin }: SignUpFormProps) {
   const { signUp } = useAuth()
   const [name, setName] = useState('')
   const [email, setEmail] = useState('')
@@ -50,6 +51,7 @@ export function SignUpForm({ onSuccess, onSwitchToLogin }: SignUpFormProps) {
       }, 1000)
       return () => clearTimeout(timer)
     }
+    return undefined
   }, [resendCountdown])
 
   const handleSubmit = async (e: React.FormEvent) => {

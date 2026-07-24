@@ -3,6 +3,7 @@ import { architectureGeneratorService } from '@/services/ai-engine/architecture-
 import type { Architecture } from '@/types'
 import { TokenStorage } from '@/utils/token-storage'
 import { useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import './GenerateArchitecturePage.css'
 
 const MAX_DESCRIPTION_LENGTH = 2000
@@ -15,6 +16,7 @@ interface GenerateArchitecturePageProps {
 export function GenerateArchitecturePage({
   onArchitectureGenerated,
 }: GenerateArchitecturePageProps) {
+  const navigate = useNavigate()
   const [description, setDescription] = useState('')
   const [isGenerating, setIsGenerating] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -244,7 +246,11 @@ export function GenerateArchitecturePage({
                 )}
 
                 <div className="next-actions">
-                  <button type="button" className="btn btn-primary">
+                  <button 
+                    type="button" 
+                    className="btn btn-primary"
+                    onClick={() => navigate('/editor', { state: { architecture: generatedArchitecture } })}
+                  >
                     Open in Visual Editor
                   </button>
                   <button type="button" className="btn btn-secondary">

@@ -1,4 +1,5 @@
 import { API_CONFIG } from '@/config'
+import { handleApiResponse } from '@/utils/api-interceptor'
 
 export interface SignUpRequest {
   email: string

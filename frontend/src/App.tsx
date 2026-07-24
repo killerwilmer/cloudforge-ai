@@ -3,6 +3,7 @@ import { AuthProvider } from '@/contexts/AuthContext'
 import { AuthPage } from '@/pages/AuthPage'
 import { GenerateArchitecturePage } from '@/pages/GenerateArchitecturePage'
 import { LandingPage } from '@/pages/LandingPage'
+import { VisualEditorPage } from '@/pages/VisualEditorPage'
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
 import './App.css'
 
@@ -18,6 +19,14 @@ function App() {
             element={
               <ProtectedRoute>
                 <GenerateArchitecturePage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/editor"
+            element={
+              <ProtectedRoute>
+                <VisualEditorPage />
               </ProtectedRoute>
             }
           />
