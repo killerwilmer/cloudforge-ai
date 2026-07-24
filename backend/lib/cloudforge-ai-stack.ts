@@ -5,6 +5,8 @@ import * as dynamodb from 'aws-cdk-lib/aws-dynamodb'
 import * as iam from 'aws-cdk-lib/aws-iam'
 import * as lambda from 'aws-cdk-lib/aws-lambda'
 import * as s3 from 'aws-cdk-lib/aws-s3'
+import * as sfn from 'aws-cdk-lib/aws-stepfunctions'
+import * as tasks from 'aws-cdk-lib/aws-stepfunctions-tasks'
 import { Construct } from 'constructs'
 
 /**
@@ -901,6 +903,276 @@ export class CloudForgeAIStack extends cdk.Stack {
     usagePlan.addApiKey(apiKey)
 
     // ========================================
+    // Deployment Pipeline - Step Functions & Lambda Functions
+    // ========================================
+
+    // Environment variables for deployment Lambdas
+    const deploymentEnv = {
+      DEPLOYMENTS_TABLE: deploymentsTable.tableName,
+      LOG_LEVEL: 'INFO',
+    }
+
+    // Validate template Lambda
+    const validateTemplateLambda = new lambda.Function(
+      this,
+      'ValidateTemplateFunction',
+      {
+        runtime: lambda.Runtime.NODEJS_20_X,
+        handler: 'lambdas/deployment/validate-template.handler',
+        code: lambda.Code.fromAsset('src'),
+        environment: deploymentEnv,
+        timeout: cdk.Duration.seconds(30),
+        memorySize: 512,
+        layers: [sharedLayer],
+      }
+    )
+
+    // Assume role Lambda
+    const assumeRoleLambda = new lambda.Function(
+      this,
+      'AssumeRoleFunction',
+      {
+        runtime: lambda.Runtime.NODEJS_20_X,
+        handler: 'lambdas/deployment/assume-role.handler',
+        code: lambda.Code.fromAsset('src'),
+        environment: deploymentEnv,
+        timeout: cdk.Duration.seconds(30),
+        memorySize: 512,
+        layers: [sharedLayer],
+      }
+    )
+
+    // Create stack Lambda
+    const createStackLambda = new lambda.Function(
+      this,
+      'CreateStackFunction',
+      {
+        runtime: lambda.Runtime.NODEJS_20_X,
+        handler: 'lambdas/deployment/create-stack.handler',
+        code: lambda.Code.fromAsset('src'),
+        environment: deploymentEnv,
+        timeout: cdk.Duration.seconds(60),
+        memorySize: 512,
+        layers: [sharedLayer],
+      }
+    )
+
+    // Poll status Lambda
+    const pollStatusLambda = new lambda.Function(
+      this,
+      'PollStatusFunction',
+      {
+        runtime: lambda.Runtime.NODEJS_20_X,
+        handler: 'lambdas/deployment/poll-status.handler',
+        code: lambda.Code.fromAsset('src'),
+        environment: deploymentEnv,
+        timeout: cdk.Duration.seconds(60),
+        memorySize: 512,
+        layers: [sharedLayer],
+      }
+    )
+
+    // Grant DynamoDB permissions to deployment Lambdas
+    deploymentsTable.grantReadWriteData(validateTemplateLambda)
+    deploymentsTable.grantReadWriteData(assumeRoleLambda)
+    deploymentsTable.grantReadWriteData(createStackLambda)
+    deploymentsTable.grantReadWriteData(pollStatusLambda)
+
+    // Grant CloudFormation permissions
+    validateTemplateLambda.addToRolePolicy(
+      new iam.PolicyStatement({
+        effect: iam.Effect.ALLOW,
+        actions: ['cloudformation:ValidateTemplate'],
+        resources: ['*'],
+      })
+    )
+
+    // Grant STS and Secrets Manager permissions to assume role Lambda
+    assumeRoleLambda.addToRolePolicy(
+      new iam.PolicyStatement({
+        effect: iam.Effect.ALLOW,
+        actions: ['sts:AssumeRole'],
+        resources: ['*'],
+      })
+    )
+
+    assumeRoleLambda.addToRolePolicy(
+      new iam.PolicyStatement({
+        effect: iam.Effect.ALLOW,
+        actions: ['secretsmanager:GetSecretValue'],
+        resources: [secretsPattern],
+      })
+    )
+
+    // Create stack and poll status Lambdas don't need extra permissions
+    // They use temporary credentials passed from assume role step
+
+    // Define Step Functions state machine
+    const validateTask = new tasks.LambdaInvoke(this, 'ValidateTemplate', {
+      lambdaFunction: validateTemplateLambda,
+      outputPath: '$.Payload',
+    })
+
+    const assumeRoleTask = new tasks.LambdaInvoke(this, 'AssumeRole', {
+      lambdaFunction: assumeRoleLambda,
+      outputPath: '$.Payload',
+    })
+
+    const createStackTask = new tasks.LambdaInvoke(this, 'CreateStack', {
+      lambdaFunction: createStackLambda,
+      outputPath: '$.Payload',
+    })
+
+    const pollStatusTask = new tasks.LambdaInvoke(this, 'PollStatus', {
+      lambdaFunction: pollStatusLambda,
+      outputPath: '$.Payload',
+    })
+
+    // Wait state for polling (5 seconds between polls)
+    const waitState = new sfn.Wait(this, 'WaitForStackProgress', {
+      time: sfn.WaitTime.duration(cdk.Duration.seconds(5)),
+    })
+
+    // Check if stack is complete
+    const isComplete = new sfn.Choice(this, 'IsStackComplete')
+      .when(sfn.Condition.booleanEquals('$.isComplete', true), new sfn.Succeed(this, 'DeploymentSucceeded'))
+      .otherwise(waitState)
+
+    // Chain: Poll → Check → Wait (loop back to Poll)
+    pollStatusTask.next(isComplete)
+    waitState.next(pollStatusTask)
+
+    // Main deployment workflow
+    const definition = validateTask.next(
+      new sfn.Choice(this, 'IsValidationSuccessful')
+        .when(sfn.Condition.booleanEquals('$.isValid', true), assumeRoleTask)
+        .otherwise(
+          new sfn.Fail(this, 'ValidationFailed', {
+            error: 'TemplateValidationError',
+            cause: 'CloudFormation template validation failed',
+          })
+        )
+    )
+
+    assumeRoleTask.next(createStackTask).next(pollStatusTask)
+
+    // Create Step Functions state machine
+    const stateMachine = new sfn.StateMachine(this, 'DeploymentStateMachine', {
+      stateMachineName: 'cloudforge-deployment-pipeline',
+      definition: definition,
+      timeout: cdk.Duration.hours(2), // Max 2 hour deployment
+      tracingEnabled: true,
+    })
+
+    // Start deployment Lambda (API)
+    const startDeploymentLambda = new lambda.Function(
+      this,
+      'StartDeploymentFunction',
+      {
+        runtime: lambda.Runtime.NODEJS_20_X,
+        handler: 'lambdas/deployment/start-deployment.handler',
+        code: lambda.Code.fromAsset('src'),
+        environment: {
+          ...deploymentEnv,
+          STATE_MACHINE_ARN: stateMachine.stateMachineArn,
+        },
+        timeout: cdk.Duration.seconds(30),
+        memorySize: 512,
+        layers: [sharedLayer],
+      }
+    )
+
+    // Get deployment Lambda (API)
+    const getDeploymentLambda = new lambda.Function(
+      this,
+      'GetDeploymentFunction',
+      {
+        runtime: lambda.Runtime.NODEJS_20_X,
+        handler: 'lambdas/deployment/get-deployment.handler',
+        code: lambda.Code.fromAsset('src'),
+        environment: deploymentEnv,
+        timeout: cdk.Duration.seconds(10),
+        memorySize: 256,
+        layers: [sharedLayer],
+      }
+    )
+
+    // List deployments Lambda (API)
+    const listDeploymentsLambda = new lambda.Function(
+      this,
+      'ListDeploymentsFunction',
+      {
+        runtime: lambda.Runtime.NODEJS_20_X,
+        handler: 'lambdas/deployment/list-deployments.handler',
+        code: lambda.Code.fromAsset('src'),
+        environment: deploymentEnv,
+        timeout: cdk.Duration.seconds(10),
+        memorySize: 256,
+        layers: [sharedLayer],
+      }
+    )
+
+    // Grant permissions
+    deploymentsTable.grantReadWriteData(startDeploymentLambda)
+    deploymentsTable.grantReadData(getDeploymentLambda)
+    deploymentsTable.grantReadData(listDeploymentsLambda)
+    stateMachine.grantStartExecution(startDeploymentLambda)
+
+    // Deployment API routes
+    const deploymentsResource = apiResource.addResource('deployments')
+
+    // POST /api/deployments/start - Start deployment
+    deploymentsResource.addResource('start').addMethod(
+      'POST',
+      new apigateway.LambdaIntegration(startDeploymentLambda, {
+        timeout: cdk.Duration.seconds(29),
+      }),
+      {
+        authorizer: authorizer,
+        authorizationType: apigateway.AuthorizationType.COGNITO,
+        methodResponses: [
+          { statusCode: '202' },
+          { statusCode: '400' },
+          { statusCode: '401' },
+          { statusCode: '500' },
+        ],
+      }
+    )
+
+    // GET /api/deployments - List deployments
+    deploymentsResource.addMethod(
+      'GET',
+      new apigateway.LambdaIntegration(listDeploymentsLambda),
+      {
+        authorizer: authorizer,
+        authorizationType: apigateway.AuthorizationType.COGNITO,
+        methodResponses: [
+          { statusCode: '200' },
+          { statusCode: '401' },
+          { statusCode: '500' },
+        ],
+      }
+    )
+
+    // GET /api/deployments/{id} - Get deployment status
+    const deploymentResource = deploymentsResource.addResource('{id}')
+    deploymentResource.addMethod(
+      'GET',
+      new apigateway.LambdaIntegration(getDeploymentLambda),
+      {
+        authorizer: authorizer,
+        authorizationType: apigateway.AuthorizationType.COGNITO,
+        methodResponses: [
+          { statusCode: '200' },
+          { statusCode: '401' },
+          { statusCode: '403' },
+          { statusCode: '404' },
+          { statusCode: '500' },
+        ],
+      }
+    )
+
+    // ========================================
     // Outputs
     // ========================================
 
@@ -950,6 +1222,12 @@ export class CloudForgeAIStack extends cdk.Stack {
       value: deploymentsTable.tableName,
       description: 'DynamoDB Deployments table',
       exportName: 'CloudForgeDeploymentsTable',
+    })
+
+    new cdk.CfnOutput(this, 'DeploymentStateMachineArn', {
+      value: stateMachine.stateMachineArn,
+      description: 'Step Functions state machine ARN for deployment pipeline',
+      exportName: 'CloudForgeDeploymentStateMachine',
     })
   }
 }
