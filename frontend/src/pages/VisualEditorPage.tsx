@@ -44,6 +44,7 @@ export function VisualEditorPage({ initialArchitecture }: VisualEditorPageProps)
   const [nodes, setNodes, onNodesChange] = useNodesState([])
   const [edges, setEdges, onEdgesChange] = useEdgesState([])
   const [selectedNode, setSelectedNode] = useState<Node | null>(null)
+  const [isPaletteCollapsed, setIsPaletteCollapsed] = useState(false)
 
   // Load initial architecture from props or navigation state
   useEffect(() => {
@@ -333,9 +334,12 @@ export function VisualEditorPage({ initialArchitecture }: VisualEditorPageProps)
       <Navbar />
       <div className="visual-editor-page">
         {/* Service Palette */}
-        <div className="service-palette">
+        <div className={`service-palette ${isPaletteCollapsed ? 'collapsed' : ''}`}>
           <h3>AWS Services</h3>
-          <p className="palette-hint">Drag services to canvas</p>
+          {!isPaletteCollapsed && <p className="palette-hint">Drag services to canvas</p>}
+          <button className="palette-toggle" onClick={() => setIsPaletteCollapsed(!isPaletteCollapsed)} title={isPaletteCollapsed ? 'Expand palette' : 'Collapse palette'}>
+            {isPaletteCollapsed ? '▶' : '◀'}
+          </button>
           <div className="service-list">
             {AWS_SERVICES.map((service) => {
               const ServiceIcon = service.icon
@@ -346,6 +350,7 @@ export function VisualEditorPage({ initialArchitecture }: VisualEditorPageProps)
                   draggable
                   onDragStart={(e) => onDragStart(e, service.type)}
                   style={{ borderLeft: `4px solid ${service.color}` }}
+                  title={service.displayName || service.type}
                 >
                   <span className="service-icon">
                     <ServiceIcon size={18} />
