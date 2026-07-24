@@ -273,20 +273,20 @@ This implementation plan prioritizes delivering a working demo by July 27, 2026 
 
 ### Day 5: Deployment Pipeline (Jul 24)
 
-- [ ] 10. Implement AWS account connection
-  - [ ] 10.1 Create AWS connection Lambda functions
+- [x] 10. Implement AWS account connection
+  - [x] 10.1 Create AWS connection Lambda functions
     - Implement AssumeRole flow with STS
     - Store temporary credentials in Secrets Manager
     - Add credential refresh logic before expiration
     - _Requirements: 2.1, 2.2, 2.3, 2.5_
   
-  - [ ] 10.2 Build AWS connection UI
+  - [x] 10.2 Build AWS connection UI
     - Create connection wizard with IAM role setup instructions
     - Add form for Role ARN and External ID input
     - Display connection status and account ID
     - _Requirements: 2.2, 2.4_
   
-  - [ ] 10.3 Write integration tests for AWS connection
+  - [x] 10.3 Write integration tests for AWS connection
     - Test successful connection with valid credentials
     - Test connection failure with invalid role
     - Test credential refresh
