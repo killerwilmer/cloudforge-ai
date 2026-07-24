@@ -10,7 +10,7 @@ import {
     getConnectionType,
     validateConnection,
 } from '@/utils/connection-validator'
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { useLocation } from 'react-router-dom'
 import {
     addEdge,
@@ -80,6 +80,7 @@ export function VisualEditorPage({ initialArchitecture }: VisualEditorPageProps)
   const [edges, setEdges, onEdgesChange] = useEdgesState([])
   const [selectedNode, setSelectedNode] = useState<Node | null>(null)
   const [isPaletteCollapsed, setIsPaletteCollapsed] = useState(false)
+  const hasChangesRef = useRef(false)
 
   // Load initial architecture from props, navigation state, or context
   useEffect(() => {
@@ -92,16 +93,7 @@ export function VisualEditorPage({ initialArchitecture }: VisualEditorPageProps)
       loadArchitecture(architecture)
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [initialArchitecture, location.state, contextArchitecture])
-
-  // Sync changes back to context whenever nodes or edges change
-  useEffect(() => {
-    if (nodes.length > 0 || edges.length > 0) {
-      const currentArchitecture = exportArchitecture()
-      setContextArchitecture(currentArchitecture)
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [nodes, edges])
+  }, [initialArchitecture, location.state])
 
   // Keyboard shortcuts
   useEffect(() => {
@@ -123,6 +115,49 @@ export function VisualEditorPage({ initialArchitecture }: VisualEditorPageProps)
     window.addEventListener('keydown', handleKeyDown)
     return () => window.removeEventListener('keydown', handleKeyDown)
   }, [selectedNode]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Track that we have changes
+  useEffect(() => {
+    if (nodes.length > 0 || edges.length > 0) {
+      hasChangesRef.current = true
+    }
+  }, [nodes, edges])
+
+  // Save to context when unmounting if we have changes
+  useEffect(() => {
+    return () => {
+      if (hasChangesRef.current) {
+        const services: AWSService[] = nodes.map((node) => ({
+          id: node.id,
+          type: node.data.serviceType as string,
+          name: node.data.name as string,
+          configuration: node.data.configuration as Record<string, unknown>,
+          position: node.position,
+        }))
+
+        const connections: ServiceConnection[] = edges.map((edge) => ({
+          id: edge.id,
+          sourceId: edge.source,
+          targetId: edge.target,
+          type: edge.animated ? 'async' : 'sync',
+          protocol: edge.label as string | undefined,
+        }))
+
+        const architecture: Architecture = {
+          services,
+          connections,
+          metadata: {
+            name: 'Untitled Architecture',
+            version: 1,
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString(),
+          },
+        }
+        
+        setContextArchitecture(architecture)
+      }
+    }
+  }, [nodes, edges, setContextArchitecture])
 
   const loadArchitecture = useCallback((architecture: Architecture) => {
     // Convert Architecture services to React Flow nodes
