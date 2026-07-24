@@ -1,8 +1,10 @@
 import { cloudFormationService } from '@/services/cloudformation.service'
+import { deploymentService } from '@/services/deployment.service'
 import type { Architecture } from '@/types'
 import { TokenStorage } from '@/utils/token-storage'
 import Editor from '@monaco-editor/react'
 import { useEffect, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import './CloudFormationPreview.css'
 
 interface CloudFormationPreviewProps {
