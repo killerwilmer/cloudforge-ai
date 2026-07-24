@@ -18,6 +18,7 @@ interface ConnectionCredentials {
   roleArn: string;
   accountId: string;
   accountAlias?: string;
+  externalId?: string;
 }
 
 /**
@@ -114,6 +115,7 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
       roleArn,
       accountId,
       accountAlias,
+      externalId, // Store external ID for refresh
     };
 
     const secretName = `cloudforge/connection/${userId}`;
