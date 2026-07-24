@@ -1,9 +1,9 @@
 import { describe, expect, it } from 'vitest'
 import {
-  getConnectionDescription,
-  getConnectionProtocol,
-  getConnectionType,
-  validateConnection,
+    getConnectionDescription,
+    getConnectionProtocol,
+    getConnectionType,
+    validateConnection,
 } from './connection-validator'
 
 describe('connection-validator', () => {
@@ -22,14 +22,19 @@ describe('connection-validator', () => {
       expect(result.reason).toBeUndefined()
     })
 
-    it('should reject invalid S3 to Cognito connection', () => {
+    it('should keep invalid connections as invalid (S3 to Cognito)', () => {
       const result = validateConnection('S3', 'Cognito')
+      // S3 is normalized to S3, Cognito is normalized to Cognito
+      // S3's allowed targets: ['Lambda', 'CloudFront', 'EventBridge', 'Monitoring']
+      // Cognito is not in the list, so it should be rejected
       expect(result.allowed).toBe(false)
       expect(result.reason).toBe('S3 cannot directly connect to Cognito')
     })
 
-    it('should reject invalid RDS to S3 connection', () => {
+    it('should keep invalid connections as invalid (RDS to S3)', () => {
       const result = validateConnection('RDS', 'S3')
+      // RDS's allowed targets: ['Lambda', 'Monitoring']
+      // S3 is not in the list, so it should be rejected
       expect(result.allowed).toBe(false)
       expect(result.reason).toContain('cannot directly connect')
     })
@@ -54,9 +59,30 @@ describe('connection-validator', () => {
       expect(result.allowed).toBe(true)
     })
 
-    it('should handle undefined service types gracefully', () => {
+    it('should allow unknown service types gracefully (permissive mode)', () => {
       const result = validateConnection('UnknownService', 'Lambda')
-      expect(result.allowed).toBe(false)
+      expect(result.allowed).toBe(true)
+      expect(result.reason).toContain('custom services')
+    })
+
+    it('should normalize Lambda handler names', () => {
+      const result = validateConnection('Create Todo Handler', 'Todos Table')
+      expect(result.allowed).toBe(true)
+    })
+
+    it('should normalize API Gateway names', () => {
+      const result = validateConnection('Todo REST API', 'Update Handler')
+      expect(result.allowed).toBe(true)
+    })
+
+    it('should allow IAM role connections to services', () => {
+      const lambdaToIAM = validateConnection('Lambda', 'Lambda Execution Role')
+      expect(lambdaToIAM.allowed).toBe(true)
+    })
+
+    it('should allow monitoring connections', () => {
+      const monitoringConn = validateConnection('Lambda', 'Monitoring & Logging')
+      expect(monitoringConn.allowed).toBe(true)
     })
   })
 
