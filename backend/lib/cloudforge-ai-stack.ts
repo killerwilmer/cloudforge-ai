@@ -149,10 +149,13 @@ export class CloudForgeAIStack extends cdk.Stack {
     // Lambda Layer for Shared Code
     // ========================================
 
+    // Shared layer with utilities and AWS SDK clients
+    // Build with: npm run build:layer
     const sharedLayer = new lambda.LayerVersion(this, 'SharedLayer', {
-      code: lambda.Code.fromAsset('src/shared'),
+      code: lambda.Code.fromAsset('layer'),
       compatibleRuntimes: [lambda.Runtime.NODEJS_20_X],
-      description: 'Shared utilities and types for CloudForge AI',
+      description: 'Shared utilities, types, and AWS SDK clients for CloudForge AI',
+      layerVersionName: 'cloudforge-shared-layer',
     })
 
     // ========================================
@@ -164,24 +167,39 @@ export class CloudForgeAIStack extends cdk.Stack {
       description: 'API for CloudForge AI platform',
       deployOptions: {
         stageName: 'prod',
-        throttlingBurstLimit: 100,
-        throttlingRateLimit: 50,
+        throttlingBurstLimit: 200, // Max concurrent requests
+        throttlingRateLimit: 100, // 100 requests per second base limit
+        metricsEnabled: true,
+        loggingLevel: apigateway.MethodLoggingLevel.INFO,
+        dataTraceEnabled: false, // Don't log full request/response (PII)
       },
       defaultCorsPreflightOptions: {
-        allowOrigins: apigateway.Cors.ALL_ORIGINS,
+        allowOrigins: apigateway.Cors.ALL_ORIGINS, // TODO: Restrict in production
         allowMethods: apigateway.Cors.ALL_METHODS,
-        allowHeaders: ['Content-Type', 'Authorization'],
+        allowHeaders: [
+          'Content-Type',
+          'Authorization',
+          'X-Amz-Date',
+          'X-Api-Key',
+          'X-Amz-Security-Token',
+        ],
+        maxAge: cdk.Duration.hours(1),
       },
     })
 
-    // Cognito authorizer (will be used for protected routes in later tasks)
-    const _authorizer = new apigateway.CognitoUserPoolsAuthorizer(
+    // Cognito authorizer for protected routes
+    const authorizer = new apigateway.CognitoUserPoolsAuthorizer(
       this,
       'CognitoAuthorizer',
       {
         cognitoUserPools: [userPool],
+        authorizerName: 'CloudForgeCognitoAuthorizer',
+        identitySource: 'method.request.header.Authorization',
       }
     )
+
+    // Export authorizer for use in protected routes (will be used in Task 4)
+    void authorizer
 
     // ========================================
     // Auth Lambda Functions
@@ -294,6 +312,38 @@ export class CloudForgeAIStack extends cdk.Stack {
         methodResponses: [{ statusCode: '200' }, { statusCode: '401' }],
       }
     )
+
+    // ========================================
+    // API Gateway Usage Plan & Rate Limiting
+    // ========================================
+
+    // Create API key for tracking (can be extended for per-user keys)
+    const apiKey = api.addApiKey('CloudForgeAPIKey', {
+      apiKeyName: 'cloudforge-api-key',
+      description: 'API key for CloudForge AI',
+    })
+
+    // Create usage plan with rate limiting
+    const usagePlan = api.addUsagePlan('CloudForgeUsagePlan', {
+      name: 'CloudForge Standard Plan',
+      description: 'Usage plan with 100 req/min per user rate limit',
+      throttle: {
+        rateLimit: 100, // 100 requests per second per user
+        burstLimit: 200, // Max 200 concurrent requests
+      },
+      quota: {
+        limit: 10000, // 10,000 requests per day per user
+        period: apigateway.Period.DAY,
+      },
+    })
+
+    // Associate usage plan with API stage
+    usagePlan.addApiStage({
+      stage: api.deploymentStage,
+    })
+
+    // Associate API key with usage plan
+    usagePlan.addApiKey(apiKey)
 
     // ========================================
     // Outputs

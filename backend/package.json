@@ -5,6 +5,7 @@
   "main": "lib/index.js",
   "scripts": {
     "build": "tsc",
+    "build:layer": "bash scripts/build-layer.sh",
     "watch": "tsc -w",
     "cdk": "cdk",
     "cdk:deploy": "cdk deploy --all",
@@ -12,8 +13,8 @@
     "cdk:synth": "cdk synth",
     "cdk:diff": "cdk diff",
     "cdk:bootstrap": "cdk bootstrap",
-    "lint": "eslint . --ext .ts",
-    "lint:fix": "eslint . --ext .ts --fix",
+    "lint": "eslint src lib bin --ext .ts",
+    "lint:fix": "eslint src lib bin --ext .ts --fix",
     "format": "prettier --write \"**/*.ts\"",
     "format:check": "prettier --check \"**/*.ts\"",
     "test": "jest",
@@ -51,8 +52,10 @@
     "@aws-sdk/client-cloudformation": "^3.1094.0",
     "@aws-sdk/client-cognito-identity-provider": "^3.1094.0",
     "@aws-sdk/client-dynamodb": "^3.1094.0",
+    "@aws-sdk/client-pricing": "^3.1094.0",
     "@aws-sdk/client-s3": "^3.1094.0",
     "@aws-sdk/client-secrets-manager": "^3.1094.0",
-    "@aws-sdk/client-sts": "^3.1094.0"
+    "@aws-sdk/client-sts": "^3.1094.0",
+    "@aws-sdk/lib-dynamodb": "^3.1094.0"
   }
 }

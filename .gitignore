@@ -59,6 +59,7 @@ htmlcov/
 *.tfstate.backup
 cdk.out/
 cdk.context.json
+layer/
 
 # Secrets and credentials
 *.pem

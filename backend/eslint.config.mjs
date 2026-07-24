@@ -8,6 +8,7 @@ export default tseslint.config({
     'node_modules/**',
     'cdk.out/**',
     'dist/**',
+    'layer/**',
   ],
   extends: [...tseslint.configs.recommended],
   languageOptions: {
