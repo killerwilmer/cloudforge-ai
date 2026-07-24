@@ -121,6 +121,8 @@
   display: flex;
   flex-direction: column;
   flex-shrink: 0;
+  z-index: 5;
+  max-height: calc(100vh - 60px);
 }
 
 .panel-header {
@@ -138,30 +140,51 @@
 }
 
 .btn-close {
-  background: none;
-  border: none;
-  color: #888;
-  font-size: 24px;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid #444;
+  color: #ccc;
+  font-size: 20px;
   cursor: pointer;
   padding: 0;
-  width: 30px;
-  height: 30px;
+  width: 28px;
+  height: 28px;
   display: flex;
   align-items: center;
   justify-content: center;
   border-radius: 4px;
   transition: all 0.2s;
+  font-weight: bold;
 }
 
 .btn-close:hover {
-  background: #333;
+  background: #da3633;
+  border-color: #da3633;
   color: #fff;
+  transform: scale(1.1);
 }
 
 .panel-content {
   padding: 20px;
   overflow-y: auto;
   flex: 1;
+}
+
+/* Scrollbar styling for config panel */
+.panel-content::-webkit-scrollbar {
+  width: 8px;
+}
+
+.panel-content::-webkit-scrollbar-track {
+  background: #1e1e1e;
+}
+
+.panel-content::-webkit-scrollbar-thumb {
+  background: #444;
+  border-radius: 4px;
+}
+
+.panel-content::-webkit-scrollbar-thumb:hover {
+  background: #555;
 }
 
 .form-group {
@@ -224,10 +247,16 @@
 .editor-toolbar {
   position: absolute;
   top: 20px;
-  right: 20px;
+  right: 330px; /* Account for config panel width + spacing */
   display: flex;
   gap: 10px;
-  z-index: 10;
+  z-index: 15;
+  transition: right 0.3s ease;
+}
+
+/* When no config panel is open */
+.visual-editor-page:not(:has(.config-panel)) .editor-toolbar {
+  right: 20px;
 }
 
 .btn-primary,
