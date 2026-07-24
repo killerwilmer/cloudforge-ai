@@ -1,15 +1,15 @@
 import {
-  AuthFlowType,
-  CognitoIdentityProviderClient,
-  InitiateAuthCommand,
+    AuthFlowType,
+    CognitoIdentityProviderClient,
+    InitiateAuthCommand,
 } from '@aws-sdk/client-cognito-identity-provider'
 import { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda'
 import {
-  errorResponse,
-  loadAuthConfig,
-  logger,
-  successResponse,
-  validationErrorResponse,
+    errorResponse,
+    loadAuthConfig,
+    logger,
+    successResponse,
+    validationErrorResponse,
 } from '../../shared/utils'
 
 // Initialize Cognito client outside handler for reuse
@@ -41,19 +41,24 @@ export async function handler(
     // Parse and validate request body
     const body = JSON.parse(event.body || '{}') as SignInRequest
 
-    if (!body.email || !body.password) {
-      return validationErrorResponse([
-        { field: 'email', message: 'Email is required' },
-        { field: 'password', message: 'Password is required' },
-      ])
+    const errors: Array<{ field: string; message: string }> = []
+
+    if (!body.email) {
+      errors.push({ field: 'email', message: 'Email is required' })
+    } else {
+      // Validate email format only if email is provided
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+      if (!emailRegex.test(body.email)) {
+        errors.push({ field: 'email', message: 'Invalid email format' })
+      }
     }
 
-    // Validate email format
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
-    if (!emailRegex.test(body.email)) {
-      return validationErrorResponse([
-        { field: 'email', message: 'Invalid email format' },
-      ])
+    if (!body.password) {
+      errors.push({ field: 'password', message: 'Password is required' })
+    }
+
+    if (errors.length > 0) {
+      return validationErrorResponse(errors)
     }
 
     // Authenticate with Cognito
