@@ -292,27 +292,27 @@ This implementation plan prioritizes delivering a working demo by July 27, 2026 
     - Test credential refresh
     - _Requirements: 2.1, 2.2, 2.3, 2.4, 2.5_
 
-- [ ] 11. Build deployment pipeline with Step Functions
-  - [ ] 11.1 Create Step Functions state machine with CDK
+- [x] 11. Build deployment pipeline with Step Functions
+  - [x] 11.1 Create Step Functions state machine with CDK
     - Define ValidateTemplate → AssumeRole → CreateStack → PollStatus → Complete workflow
     - Add error handling and retry logic for each step
     - Implement rollback on failure
     - _Requirements: 7.1, 7.2, 7.5_
   
-  - [ ] 11.2 Implement deployment Lambda functions
+  - [x] 11.2 Implement deployment Lambda functions
     - Create validateTemplate handler (calls CloudFormation.validateTemplate)
     - Create assumeRole handler (gets temporary credentials)
     - Create createStack handler (launches CloudFormation stack)
     - Create pollStatus handler (checks stack status every 5 seconds)
     - _Requirements: 7.1, 7.2, 7.3_
   
-  - [ ] 11.3 Set up deployment tracking in DynamoDB
+  - [x] 11.3 Set up deployment tracking in DynamoDB
     - Deploy cloudforge-deployments table with deploymentId key
     - Add UserDeploymentsIndex GSI for deployment history
     - Store stack status, resources, and errors
     - _Requirements: 7.7_
   
-  - [ ] 11.4 Write integration tests for deployment pipeline
+  - [x] 11.4 Write integration tests for deployment pipeline
     - Test successful deployment flow
     - Test validation failure handling
     - Test deployment failure and rollback
