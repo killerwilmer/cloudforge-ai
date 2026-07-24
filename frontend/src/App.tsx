@@ -2,6 +2,7 @@ import { ProtectedRoute } from '@/components/auth/ProtectedRoute'
 import { ArchitectureProvider } from '@/contexts/ArchitectureContext'
 import { AuthProvider } from '@/contexts/AuthContext'
 import { AuthPage } from '@/pages/AuthPage'
+import { AWSConnectionPage } from '@/pages/AWSConnectionPage'
 import { GenerateArchitecturePage } from '@/pages/GenerateArchitecturePage'
 import { LandingPage } from '@/pages/LandingPage'
 import { VisualEditorPage } from '@/pages/VisualEditorPage'
@@ -32,6 +33,14 @@ function App() {
                   <ReactFlowProvider>
                     <VisualEditorPage />
                   </ReactFlowProvider>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/aws-connection"
+              element={
+                <ProtectedRoute>
+                  <AWSConnectionPage />
                 </ProtectedRoute>
               }
             />

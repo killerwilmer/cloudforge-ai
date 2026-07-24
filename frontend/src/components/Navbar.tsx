@@ -44,6 +44,9 @@ export function Navbar() {
               <button className="nav-link" onClick={() => navigate('/editor')}>
                 Visual Editor
               </button>
+              <button className="nav-link" onClick={() => navigate('/aws-connection')}>
+                AWS Connection
+              </button>
             </div>
             <div className="navbar-user">
               <span className="user-email">{user?.email || 'User'}</span>
