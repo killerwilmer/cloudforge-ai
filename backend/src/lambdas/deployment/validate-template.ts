@@ -10,14 +10,19 @@ export interface ValidateTemplateInput {
   deploymentId: string;
   userId: string;
   templateBody: string;
+  stackName: string;
+  region: string;
+  parameters?: Array<{ ParameterKey: string; ParameterValue: string }>;
 }
 
 export interface ValidateTemplateOutput {
   deploymentId: string;
   userId: string;
   templateBody: string;
+  stackName: string;
+  region: string;
   isValid: boolean;
-  parameters?: Array<{ ParameterKey: string; DefaultValue?: string }>;
+  parameters?: Array<{ ParameterKey: string; ParameterValue: string }>;
   capabilities?: string[];
   error?: string;
 }
@@ -83,10 +88,12 @@ export const handler = async (event: ValidateTemplateInput): Promise<ValidateTem
       deploymentId: event.deploymentId,
       userId: event.userId,
       templateBody: event.templateBody,
+      stackName: event.stackName,
+      region: event.region,
       isValid: true,
       parameters: result.Parameters?.map((p) => ({
         ParameterKey: p.ParameterKey!,
-        DefaultValue: p.DefaultValue,
+        ParameterValue: p.DefaultValue || '',
       })),
       capabilities: result.Capabilities,
     };
@@ -119,6 +126,8 @@ export const handler = async (event: ValidateTemplateInput): Promise<ValidateTem
       deploymentId: event.deploymentId,
       userId: event.userId,
       templateBody: event.templateBody,
+      stackName: event.stackName,
+      region: event.region,
       isValid: false,
       error: errorMessage,
     };

@@ -56,9 +56,10 @@ export const handler = async (event: CreateStackInput): Promise<CreateStackOutpu
         Key: {
           deploymentId: { S: event.deploymentId },
         },
-        UpdateExpression: 'SET #status = :status, creatingStackAt = :now, stackName = :stackName, region = :region',
+        UpdateExpression: 'SET #status = :status, creatingStackAt = :now, stackName = :stackName, #region = :region',
         ExpressionAttributeNames: {
           '#status': 'status',
+          '#region': 'region',
         },
         ExpressionAttributeValues: {
           ':status': { S: 'CREATING_STACK' },

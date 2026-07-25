@@ -2,10 +2,10 @@ import { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda'
 import * as yaml from 'yaml'
 import type { Architecture, CloudFormationTemplate } from '../../shared/types'
 import {
-  errorResponse,
-  logger,
-  successResponse,
-  validationErrorResponse,
+    errorResponse,
+    logger,
+    successResponse,
+    validationErrorResponse,
 } from '../../shared/utils'
 
 interface GenerateCloudFormationRequest {
@@ -33,6 +33,8 @@ const SERVICE_TYPE_MAPPING: Record<string, string> = {
   ElastiCache: 'AWS::ElastiCache::CacheCluster',
   VPC: 'AWS::EC2::VPC',
   IAM: 'AWS::IAM::Role',
+  CloudWatch: 'AWS::Logs::LogGroup',
+  Monitoring: 'AWS::Logs::LogGroup',
 }
 
 /**
@@ -153,32 +155,71 @@ function generateTemplate(architecture: Architecture): CloudFormationTemplate {
     const logicalId = serviceIdMap.get(service.id)!
     const cfnType = SERVICE_TYPE_MAPPING[service.type]
 
+    // Log service type and cfnType for debugging
+    logger.info('Processing service', {
+      serviceId: service.id,
+      serviceName: service.name,
+      serviceType: service.type,
+      cfnType: cfnType,
+    })
+
     if (!cfnType) {
-      logger.warn('Unknown service type, using custom resource', {
+      logger.warn('Unknown service type, skipping custom resource placeholder', {
         serviceType: service.type,
+        serviceName: service.name,
       })
-      // Create placeholder for unknown types
-      template.Resources[logicalId] = {
-        Type: 'AWS::CloudFormation::CustomResource',
-        Properties: {
-          ServiceToken: '<<REPLACE_WITH_CUSTOM_RESOURCE_ARN>>',
-          ServiceType: service.type,
-          Configuration: service.configuration,
-        },
-      }
+      // Skip placeholder custom resources that would fail deployment
       return
     }
 
-    const resource = generateResource(service, cfnType, architecture, serviceIdMap)
-    template.Resources[logicalId] = resource
-
-    // Generate outputs for key services
-    if (shouldGenerateOutput(service.type)) {
-      template.Outputs![`${logicalId}Output`] = generateOutput(
-        service,
+    // Generate IAM role for Lambda functions first
+    if (cfnType === 'AWS::Lambda::Function') {
+      const roleLogicalId = `${logicalId}Role`
+      logger.info('Creating IAM role for Lambda function', {
         logicalId,
-        cfnType
-      )
+        roleLogicalId,
+      })
+      template.Resources[roleLogicalId] = {
+        Type: 'AWS::IAM::Role',
+        Properties: {
+          RoleName: {
+            'Fn::Sub': `\${ProjectName}-\${Environment}-${sanitizeResourceName(service.name)}-role`,
+          },
+          AssumeRolePolicyDocument: {
+            Version: '2012-10-17',
+            Statement: [
+              {
+                Effect: 'Allow',
+                Principal: { Service: 'lambda.amazonaws.com' },
+                Action: 'sts:AssumeRole',
+              },
+            ],
+          },
+          ManagedPolicyArns: [
+            'arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole',
+          ],
+          Tags: [
+            { Key: 'ManagedBy', Value: 'CloudForgeAI' },
+            { Key: 'ServiceName', Value: service.name },
+          ],
+        },
+      }
+    }
+
+    const resource = generateResource(service, cfnType, architecture, serviceIdMap)
+    
+    // Skip if resource generation returned null (e.g., CloudWatch resources that are skipped)
+    if (resource) {
+      template.Resources[logicalId] = resource
+
+      // Generate outputs for key services
+      if (shouldGenerateOutput(service.type)) {
+        template.Outputs![`${logicalId}Output`] = generateOutput(
+          service,
+          logicalId,
+          cfnType
+        )
+      }
     }
   })
 
@@ -191,8 +232,8 @@ function generateTemplate(architecture: Architecture): CloudFormationTemplate {
     },
     ProjectName: {
       Type: 'String',
-      Description: 'Project name for resource naming',
-      Default: sanitizeParameterValue(architecture.metadata.name),
+      Description: 'Project name for resource naming (defaults to stack name)',
+      // No default - will be passed as parameter with stack name value
     },
   }
 
@@ -237,6 +278,17 @@ function generateResource(
     case 'IAM':
       return generateIAMResource(service, config)
 
+    case 'CloudFront':
+      return generateCloudFrontResource(service, config)
+
+    case 'CloudWatch':
+    case 'Monitoring':
+      // Skip CloudWatch resources for now - CloudFormation auto-creates logs for Lambda
+      logger.info('Skipping CloudWatch resource - logs auto-created by CloudFormation', {
+        serviceName: service.name,
+      })
+      return null
+
     default:
       // Generic resource with basic properties
       return {
@@ -264,16 +316,19 @@ function generateLambdaResource(
   const runtime = config.runtime || 'nodejs20.x'
   const memory = config.memory || 512
   const timeout = config.timeout || 30
+  const logicalId = serviceIdMap.get(service.id)!
 
   return {
     Type: 'AWS::Lambda::Function',
     Properties: {
-      FunctionName: { Ref: 'AWS::StackName' } + '-' + sanitizeResourceName(service.name),
+      FunctionName: {
+        'Fn::Sub': `\${ProjectName}-\${Environment}-${sanitizeResourceName(service.name)}`,
+      },
       Runtime: runtime,
       MemorySize: memory,
       Timeout: timeout,
       Handler: config.handler || 'index.handler',
-      Role: { 'Fn::GetAtt': [`${sanitizeLogicalId(service.id, service.name)}Role`, 'Arn'] },
+      Role: { 'Fn::GetAtt': [`${logicalId}Role`, 'Arn'] },
       Code: {
         ZipFile: config.code || '// Replace with your Lambda code',
       },
@@ -495,6 +550,69 @@ function generateIAMResource(service: any, config: any): any {
       Tags: [
         { Key: 'ManagedBy', Value: 'CloudForgeAI' },
         { Key: 'ServiceName', Value: service.name },
+      ],
+    },
+  }
+}
+
+/**
+ * Generate CloudFront distribution resource
+ */
+function generateCloudFrontResource(service: any, config: any): any {
+  return {
+    Type: 'AWS::CloudFront::Distribution',
+    Properties: {
+      DistributionConfig: {
+        Enabled: config.enabled !== false,
+        Comment: service.name || 'CloudForge AI Generated Distribution',
+        DefaultCacheBehavior: {
+          TargetOriginId: config.originId || 'default-origin',
+          ViewerProtocolPolicy: config.viewerProtocolPolicy || 'redirect-to-https',
+          AllowedMethods: config.allowedMethods || ['GET', 'HEAD', 'OPTIONS'],
+          CachedMethods: ['GET', 'HEAD'],
+          ForwardedValues: {
+            QueryString: true,
+            Cookies: { Forward: 'none' },
+          },
+          Compress: config.compress !== false,
+          DefaultTTL: config.defaultTTL || 3600,
+          MaxTTL: config.maxTTL || 86400,
+          MinTTL: config.minTTL || 0,
+        },
+        Origins: config.origins || [
+          {
+            Id: 'default-origin',
+            DomainName: '<<REPLACE_WITH_ORIGIN_DOMAIN>>',
+            CustomOriginConfig: {
+              HTTPPort: 80,
+              HTTPSPort: 443,
+              OriginProtocolPolicy: config.originProtocolPolicy || 'https-only',
+            },
+          },
+        ],
+        HttpVersion: config.httpVersion || 'http2',
+        PriceClass: config.priceClass || 'PriceClass_100',
+      },
+      Tags: [
+        { Key: 'ManagedBy', Value: 'CloudForgeAI' },
+        { Key: 'ServiceName', Value: service.name },
+      ],
+    },
+  }
+}
+
+/**
+ * Generate CloudWatch log group resource
+ */
+function generateCloudWatchResource(service: any, config: any): any {
+  return {
+    Type: 'AWS::Logs::LogGroup',
+    Properties: {
+      LogGroupName: { 'Fn::Sub': '/aws/cloudforge/${ProjectName}-${Environment}-' + sanitizeResourceName(service.name) },
+      RetentionInDays: config.retentionDays || 30,
+      Tags: [
+        { Key: 'ManagedBy', Value: 'CloudForge' },
+        { Key: 'Service', Value: sanitizeResourceName(service.name) },
       ],
     },
   }

@@ -1,6 +1,6 @@
-import { APIGatewayProxyHandler } from 'aws-lambda';
 import { DynamoDBClient, GetItemCommand } from '@aws-sdk/client-dynamodb';
 import { unmarshall } from '@aws-sdk/util-dynamodb';
+import { APIGatewayProxyHandler } from 'aws-lambda';
 
 const dynamoClient = new DynamoDBClient({});
 
@@ -73,6 +73,25 @@ export const handler: APIGatewayProxyHandler = async (event) => {
     }
 
     const deployment = unmarshall(response.Item);
+
+    // Parse JSON string fields back to objects
+    if (deployment.resources && typeof deployment.resources === 'string') {
+      try {
+        deployment.resources = JSON.parse(deployment.resources);
+      } catch (e) {
+        console.error('Failed to parse resources JSON:', e);
+        deployment.resources = [];
+      }
+    }
+
+    if (deployment.stackOutputs && typeof deployment.stackOutputs === 'string') {
+      try {
+        deployment.stackOutputs = JSON.parse(deployment.stackOutputs);
+      } catch (e) {
+        console.error('Failed to parse stackOutputs JSON:', e);
+        deployment.stackOutputs = [];
+      }
+    }
 
     // Verify user owns this deployment
     if (deployment.userId !== userId) {

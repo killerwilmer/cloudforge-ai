@@ -16,28 +16,43 @@ export function DeploymentStatusPage() {
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
+    console.log('DeploymentStatusPage: mounted', { deploymentId })
+    
     if (!deploymentId) {
+      console.error('DeploymentStatusPage: No deploymentId')
       setError('Deployment ID is required')
       setLoading(false)
       return
     }
 
+    console.log('DeploymentStatusPage: Loading deployment...')
     // Initial load
     loadDeployment(deploymentId)
 
+    let stopPolling: (() => void) | null = null
+
     // Start polling for updates
-    const stopPolling = deploymentService.pollDeploymentStatus(
-      deploymentId,
-      (updatedDeployment) => {
-        setDeployment(updatedDeployment)
-        setLoading(false)
-      },
-      5000 // Poll every 5 seconds
-    )
+    deploymentService
+      .pollDeploymentStatus(
+        deploymentId,
+        (updatedDeployment) => {
+          console.log('DeploymentStatusPage: Poll update received', updatedDeployment)
+          setDeployment(updatedDeployment)
+          setLoading(false)
+        },
+        5000 // Poll every 5 seconds
+      )
+      .then((stop) => {
+        console.log('DeploymentStatusPage: Polling started')
+        stopPolling = stop
+      })
 
     // Cleanup on unmount
     return () => {
-      stopPolling()
+      console.log('DeploymentStatusPage: Cleanup')
+      if (stopPolling) {
+        stopPolling()
+      }
     }
   }, [deploymentId])
 
@@ -81,7 +96,20 @@ export function DeploymentStatusPage() {
     const failed: StackResource[] = []
     const pending: StackResource[] = []
 
+    // Create a map to track the latest status for each resource
+    const latestResourceStatus = new Map<string, StackResource>()
+    
+    // CloudFormation returns events in reverse chronological order (newest first)
+    // We want the most recent status for each resource
     resources.forEach((resource) => {
+      const existingResource = latestResourceStatus.get(resource.logicalId)
+      if (!existingResource) {
+        latestResourceStatus.set(resource.logicalId, resource)
+      }
+    })
+
+    // Now group the latest status for each resource
+    latestResourceStatus.forEach((resource) => {
       if (resource.status.includes('COMPLETE') && !resource.status.includes('ROLLBACK')) {
         completed.push(resource)
       } else if (resource.status.includes('FAILED')) {
@@ -112,6 +140,9 @@ export function DeploymentStatusPage() {
         <div className="loading-container">
           <div className="spinner"></div>
           <p>Loading deployment status...</p>
+          <p style={{ fontSize: '0.8rem', color: '#9ca3af', marginTop: '1rem' }}>
+            Deployment ID: {deploymentId}
+          </p>
         </div>
       </div>
     )

@@ -1,8 +1,8 @@
 import {
-  CloudFormationClient,
-  DescribeStacksCommand,
-  DescribeStackEventsCommand,
-  StackStatus,
+    CloudFormationClient,
+    DescribeStackEventsCommand,
+    DescribeStacksCommand,
+    StackStatus,
 } from '@aws-sdk/client-cloudformation';
 import { DynamoDBClient, UpdateItemCommand } from '@aws-sdk/client-dynamodb';
 
@@ -16,11 +16,6 @@ export interface PollStatusInput {
   stackName: string;
   stackId: string;
   region: string;
-  credentials: {
-    accessKeyId: string;
-    secretAccessKey: string;
-    sessionToken: string;
-  };
 }
 
 export interface PollStatusOutput {
@@ -52,14 +47,9 @@ export const handler = async (event: PollStatusInput): Promise<PollStatusOutput>
     stackName: event.stackName,
   });
 
-  // Create CloudFormation client with user's credentials
+  // Create CloudFormation client (uses Lambda's IAM role)
   const cfnClient = new CloudFormationClient({
     region: event.region,
-    credentials: {
-      accessKeyId: event.credentials.accessKeyId,
-      secretAccessKey: event.credentials.secretAccessKey,
-      sessionToken: event.credentials.sessionToken,
-    },
   });
 
   try {
@@ -124,14 +114,16 @@ export const handler = async (event: PollStatusInput): Promise<PollStatusOutput>
         Key: {
           deploymentId: { S: event.deploymentId },
         },
-        UpdateExpression: 'SET #status = :status, stackStatus = :stackStatus, lastPolledAt = :now',
+        UpdateExpression: 'SET #status = :status, stackStatus = :stackStatus, lastPolledAt = :now, #resources = :resources',
         ExpressionAttributeNames: {
           '#status': 'status',
+          '#resources': 'resources',
         },
         ExpressionAttributeValues: {
           ':status': { S: isComplete ? (isSuccess ? 'COMPLETED' : 'FAILED') : 'IN_PROGRESS' },
           ':stackStatus': { S: stackStatus },
           ':now': { S: new Date().toISOString() },
+          ':resources': { S: JSON.stringify(resources || []) },
         },
       })
     );

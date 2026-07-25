@@ -86,7 +86,18 @@ export function CloudFormationPreview({ architecture, onClose }: CloudFormationP
   const handleDeploy = async () => {
     if (!template) return
 
-    const stackName = `${architecture.metadata.name.toLowerCase().replace(/[^a-z0-9]+/g, '-')}-${Date.now()}`
+    // Generate a valid stack name
+    const baseName = architecture.metadata.name || 'CloudForge-Stack'
+    const sanitizedName = baseName
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/^-+|-+$/g, '') // Remove leading/trailing hyphens
+      .substring(0, 100) // Limit to 100 chars to leave room for timestamp
+    
+    // Ensure stack name starts with a letter
+    const stackName = sanitizedName.match(/^[a-z]/)
+      ? `${sanitizedName}-${Date.now()}`
+      : `stack-${sanitizedName}-${Date.now()}`
     
     setDeploying(true)
     setError(null)
@@ -96,6 +107,12 @@ export function CloudFormationPreview({ architecture, onClose }: CloudFormationP
         templateBody: template,
         stackName,
         region: 'us-east-1', // Default region, could be made configurable
+        parameters: [
+          {
+            ParameterKey: 'ProjectName',
+            ParameterValue: stackName, // Use stack name as project name for uniqueness
+          },
+        ],
       })
 
       // Navigate to deployment status page

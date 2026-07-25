@@ -987,6 +987,19 @@ export class CloudForgeAIStack extends cdk.Stack {
       })
     )
 
+    // Grant CloudFormation read permissions to poll-status Lambda
+    pollStatusLambda.addToRolePolicy(
+      new iam.PolicyStatement({
+        effect: iam.Effect.ALLOW,
+        actions: [
+          'cloudformation:DescribeStacks',
+          'cloudformation:DescribeStackEvents',
+          'cloudformation:DescribeStackResources',
+        ],
+        resources: ['*'],
+      })
+    )
+
     // Grant STS and Secrets Manager permissions to assume role Lambda
     assumeRoleLambda.addToRolePolicy(
       new iam.PolicyStatement({
