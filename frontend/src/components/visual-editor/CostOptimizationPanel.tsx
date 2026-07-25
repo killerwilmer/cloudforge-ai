@@ -1,5 +1,6 @@
-import { useState } from 'react';
 import type { Architecture } from '@/types';
+import { TokenStorage } from '@/utils/token-storage';
+import { useState } from 'react';
 import './CostOptimizationPanel.css';
 
 interface ServiceCost {
@@ -70,7 +71,7 @@ export function CostOptimizationPanel({
     setOptimizationResult(null);
 
     try {
-      const token = localStorage.getItem('idToken');
+      const token = TokenStorage.getIdToken();
       if (!token) {
         throw new Error('Not authenticated');
       }
@@ -111,7 +112,7 @@ export function CostOptimizationPanel({
     setError(null);
 
     try {
-      const token = localStorage.getItem('idToken');
+      const token = TokenStorage.getIdToken();
       if (!token) {
         throw new Error('Not authenticated');
       }
