@@ -1125,11 +1125,39 @@ export class CloudForgeAIStack extends cdk.Stack {
       }
     )
 
+    // Delete stack Lambda (API)
+    const deleteStackLambda = new lambda.Function(
+      this,
+      'DeleteStackFunction',
+      {
+        runtime: lambda.Runtime.NODEJS_20_X,
+        handler: 'lambdas/deployment/delete-stack.handler',
+        code: lambda.Code.fromAsset('src'),
+        environment: deploymentEnv,
+        timeout: cdk.Duration.seconds(30),
+        memorySize: 512,
+        layers: [sharedLayer],
+      }
+    )
+
     // Grant permissions
     deploymentsTable.grantReadWriteData(startDeploymentLambda)
     deploymentsTable.grantReadData(getDeploymentLambda)
     deploymentsTable.grantReadData(listDeploymentsLambda)
+    deploymentsTable.grantReadWriteData(deleteStackLambda)
     stateMachine.grantStartExecution(startDeploymentLambda)
+
+    // Grant CloudFormation delete permission to delete-stack Lambda
+    deleteStackLambda.addToRolePolicy(
+      new iam.PolicyStatement({
+        effect: iam.Effect.ALLOW,
+        actions: [
+          'cloudformation:DeleteStack',
+          'cloudformation:DescribeStacks',
+        ],
+        resources: ['*'],
+      })
+    )
 
     // Deployment API routes
     const deploymentsResource = apiResource.addResource('deployments', {
@@ -1197,7 +1225,7 @@ export class CloudForgeAIStack extends cdk.Stack {
     const deploymentResource = deploymentsResource.addResource('{id}', {
       defaultCorsPreflightOptions: {
         allowOrigins: apigateway.Cors.ALL_ORIGINS,
-        allowMethods: ['GET', 'OPTIONS'],
+        allowMethods: ['GET', 'DELETE', 'OPTIONS'],
         allowHeaders: [
           'Content-Type',
           'Authorization',
@@ -1215,6 +1243,26 @@ export class CloudForgeAIStack extends cdk.Stack {
         authorizationType: apigateway.AuthorizationType.COGNITO,
         methodResponses: [
           { statusCode: '200' },
+          { statusCode: '401' },
+          { statusCode: '403' },
+          { statusCode: '404' },
+          { statusCode: '500' },
+        ],
+      }
+    )
+
+    // DELETE /api/deployments/{id} - Delete deployment stack
+    deploymentResource.addMethod(
+      'DELETE',
+      new apigateway.LambdaIntegration(deleteStackLambda, {
+        timeout: cdk.Duration.seconds(29),
+      }),
+      {
+        authorizer: authorizer,
+        authorizationType: apigateway.AuthorizationType.COGNITO,
+        methodResponses: [
+          { statusCode: '202' },
+          { statusCode: '400' },
           { statusCode: '401' },
           { statusCode: '403' },
           { statusCode: '404' },

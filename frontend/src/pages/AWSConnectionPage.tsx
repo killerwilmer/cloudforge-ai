@@ -1,9 +1,12 @@
+import { Navbar } from '@/components/Navbar';
 import { AWSConnectionStatus } from '@/components/aws-connection/AWSConnectionStatus';
 import './AWSConnectionPage.css';
 
 export function AWSConnectionPage() {
   return (
-    <div className="aws-connection-page">
+    <>
+      <Navbar />
+      <div className="aws-connection-page">
       <div className="aws-connection-container">
         <header className="page-header">
           <h1>AWS Account Connection</h1>
@@ -51,14 +54,20 @@ export function AWSConnectionPage() {
                 </button>
               </div>
 
-              <div className="next-step-card coming-soon">
+              <div className="next-step-card">
                 <div className="step-number">3</div>
                 <h4>Deploy to AWS</h4>
                 <p>
-                  One-click deployment to your connected AWS account. (Coming
-                  soon in Task 11 - Deployment Pipeline)
+                  One-click deployment to your connected AWS account. Monitor
+                  deployment progress and view CloudFormation stack resources
+                  in real-time.
                 </p>
-                <div className="coming-soon-badge">Coming Soon</div>
+                <button
+                  className="btn-secondary"
+                  onClick={() => (window.location.href = '/deployments')}
+                >
+                  View Deployments →
+                </button>
               </div>
             </div>
           </div>
@@ -100,5 +109,6 @@ export function AWSConnectionPage() {
         </div>
       </div>
     </div>
+    </>
   );
 }

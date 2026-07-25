@@ -47,6 +47,9 @@ export function Navbar() {
               <button className="nav-link" onClick={() => navigate('/aws-connection')}>
                 AWS Connection
               </button>
+              <button className="nav-link" onClick={() => navigate('/deployments')}>
+                Deployment History
+              </button>
             </div>
             <div className="navbar-user">
               <span className="user-email">{user?.email || 'User'}</span>

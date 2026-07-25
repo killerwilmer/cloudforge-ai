@@ -87,10 +87,14 @@ export interface Deployment {
 export type DeploymentStatus =
   | 'VALIDATING'
   | 'IN_PROGRESS'
-  | 'COMPLETE'
+  | 'COMPLETED'
   | 'FAILED'
+  | 'POLL_STATUS_FAILED'
+  | 'VALIDATION_FAILED'
   | 'ROLLBACK_IN_PROGRESS'
   | 'ROLLBACK_COMPLETE'
+  | 'DELETING'
+  | 'DELETED'
 
 // DynamoDB record types
 export interface UserRecord {

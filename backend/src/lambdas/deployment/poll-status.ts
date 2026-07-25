@@ -167,6 +167,42 @@ export const handler = async (event: PollStatusInput): Promise<PollStatusOutput>
   } catch (error: any) {
     console.error('Failed to poll stack status:', error);
 
+    // Check if stack was deleted (ValidationError means stack doesn't exist)
+    if (error.name === 'ValidationError' && error.message?.includes('does not exist')) {
+      console.log('Stack has been deleted');
+      
+      // Update deployment status to deleted
+      await dynamoClient.send(
+        new UpdateItemCommand({
+          TableName: DEPLOYMENTS_TABLE,
+          Key: {
+            deploymentId: { S: event.deploymentId },
+          },
+          UpdateExpression:
+            'SET #status = :status, deletedAt = :now, stackStatus = :stackStatus',
+          ExpressionAttributeNames: {
+            '#status': 'status',
+          },
+          ExpressionAttributeValues: {
+            ':status': { S: 'DELETED' },
+            ':now': { S: new Date().toISOString() },
+            ':stackStatus': { S: 'DELETE_COMPLETE' },
+          },
+        })
+      );
+
+      return {
+        deploymentId: event.deploymentId,
+        userId: event.userId,
+        stackName: event.stackName,
+        stackId: event.stackId,
+        region: event.region,
+        status: 'DELETE_COMPLETE',
+        isComplete: true,
+        isSuccess: true,
+      };
+    }
+
     const errorMessage = error.message || 'Unknown error polling stack status';
 
     // Update deployment status to failed

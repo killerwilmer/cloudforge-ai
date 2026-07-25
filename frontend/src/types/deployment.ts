@@ -8,8 +8,11 @@ export type DeploymentStatus =
   | 'COMPLETED'
   | 'FAILED'
   | 'POLL_STATUS_FAILED'
+  | 'VALIDATION_FAILED'
   | 'ROLLBACK_IN_PROGRESS'
   | 'ROLLBACK_COMPLETE'
+  | 'DELETING'
+  | 'DELETED'
 
 export type StackStatus =
   | 'CREATE_IN_PROGRESS'

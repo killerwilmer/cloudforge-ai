@@ -54,21 +54,21 @@ const formatNodeLabel = (name: string, ServiceIcon: React.ComponentType<{ size?:
     const subtitle = match[2].trim()
     
     return (
-      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-          <ServiceIcon size={16} />
-          <span style={{ fontSize: '11px', fontWeight: '600', lineHeight: '1.2' }}>{title}</span>
+      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '2px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+          <ServiceIcon size={12} />
+          <span style={{ fontSize: '9px', fontWeight: '600', lineHeight: '1.2' }}>{title}</span>
         </div>
-        <span style={{ fontSize: '9px', fontWeight: '400', opacity: 0.85, lineHeight: '1' }}>{subtitle}</span>
+        <span style={{ fontSize: '8px', fontWeight: '400', opacity: 0.85, lineHeight: '1' }}>{subtitle}</span>
       </div>
     )
   }
   
   // No subtitle pattern found - show icon + full name
   return (
-    <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-      <ServiceIcon size={16} />
-      <span style={{ fontSize: '11px', fontWeight: '600', lineHeight: '1.2' }}>{name}</span>
+    <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+      <ServiceIcon size={12} />
+      <span style={{ fontSize: '9px', fontWeight: '600', lineHeight: '1.2' }}>{name}</span>
     </div>
   )
 }
@@ -216,13 +216,15 @@ export function VisualEditorPage({ initialArchitecture }: VisualEditorPageProps)
         style: {
           background: color,
           color: 'white',
-          border: '2px solid #222',
-          borderRadius: '8px',
-          padding: '8px 10px',
-          fontSize: '11px',
+          border: '1px solid rgba(255,255,255,0.2)',
+          borderRadius: '6px',
+          padding: '6px 8px',
+          fontSize: '10px',
           fontWeight: '600',
-          minWidth: '140px',
+          minWidth: '100px',
+          maxWidth: '160px',
           textAlign: 'center',
+          boxShadow: '0 2px 8px rgba(0,0,0,0.3)',
         },
       }
     })
@@ -347,13 +349,15 @@ export function VisualEditorPage({ initialArchitecture }: VisualEditorPageProps)
         style: {
           background: service.color,
           color: 'white',
-          border: '2px solid #222',
-          borderRadius: '8px',
-          padding: '8px 10px',
-          fontSize: '11px',
+          border: '1px solid rgba(255,255,255,0.2)',
+          borderRadius: '6px',
+          padding: '6px 8px',
+          fontSize: '10px',
           fontWeight: '600',
-          minWidth: '140px',
+          minWidth: '100px',
+          maxWidth: '160px',
           textAlign: 'center',
+          boxShadow: '0 2px 8px rgba(0,0,0,0.3)',
         },
       }
 
@@ -533,7 +537,7 @@ export function VisualEditorPage({ initialArchitecture }: VisualEditorPageProps)
                   title={service.displayName || service.type}
                 >
                   <span className="service-icon">
-                    <ServiceIcon size={18} />
+                    <ServiceIcon size={36} />
                   </span>
                   <span className="service-name">{service.displayName || service.type}</span>
                 </div>
@@ -602,14 +606,6 @@ export function VisualEditorPage({ initialArchitecture }: VisualEditorPageProps)
             disabled={nodes.length === 0}
           >
             <span className="icon">☁️</span> CloudFormation
-          </button>
-          <button 
-            className="btn-primary btn-deploy" 
-            onClick={() => setShowCloudFormationPreview(true)} 
-            title="Deploy architecture to AWS"
-            disabled={nodes.length === 0}
-          >
-            <span className="icon">🚀</span> Deploy to AWS
           </button>
         </div>
 

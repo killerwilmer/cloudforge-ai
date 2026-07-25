@@ -1,7 +1,8 @@
+import { Navbar } from '@/components/Navbar'
 import { deploymentService } from '@/services/deployment.service'
 import type { DeploymentListItem } from '@/types'
 import { useEffect, useState } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { useNavigate } from 'react-router-dom'
 import './DeploymentHistoryPage.css'
 
 /**
@@ -13,6 +14,7 @@ export function DeploymentHistoryPage() {
   const [deployments, setDeployments] = useState<DeploymentListItem[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [deletingId, setDeletingId] = useState<string | null>(null)
 
   useEffect(() => {
     loadDeployments()
@@ -34,15 +36,15 @@ export function DeploymentHistoryPage() {
 
   const getStatusBadgeClass = (status: string) => {
     if (status === 'COMPLETED') return 'badge-success'
-    if (status === 'FAILED' || status === 'POLL_STATUS_FAILED') return 'badge-error'
-    if (status === 'IN_PROGRESS' || status === 'VALIDATING') return 'badge-progress'
+    if (status === 'FAILED' || status === 'POLL_STATUS_FAILED' || status === 'VALIDATION_FAILED' || status === 'ROLLBACK_COMPLETE') return 'badge-error'
+    if (status === 'IN_PROGRESS' || status === 'VALIDATING' || status === 'ROLLBACK_IN_PROGRESS') return 'badge-progress'
     return 'badge-pending'
   }
 
   const getStatusIcon = (status: string) => {
     if (status === 'COMPLETED') return '✓'
-    if (status === 'FAILED' || status === 'POLL_STATUS_FAILED') return '✗'
-    if (status === 'IN_PROGRESS' || status === 'VALIDATING') return '⟳'
+    if (status === 'FAILED' || status === 'POLL_STATUS_FAILED' || status === 'VALIDATION_FAILED' || status === 'ROLLBACK_COMPLETE') return '✗'
+    if (status === 'IN_PROGRESS' || status === 'VALIDATING' || status === 'ROLLBACK_IN_PROGRESS') return '⟳'
     return '○'
   }
 
@@ -73,36 +75,70 @@ export function DeploymentHistoryPage() {
     return `https://console.aws.amazon.com/cloudformation/home?region=${region}#/stacks?filteringText=${encodeURIComponent(stackName)}`
   }
 
+  const handleDeleteDeployment = async (deploymentId: string, e: React.MouseEvent) => {
+    e.stopPropagation()
+
+    if (!confirm('Are you sure you want to delete this deployment? This action cannot be undone.')) {
+      return
+    }
+
+    try {
+      setDeletingId(deploymentId)
+      await deploymentService.deleteDeployment(deploymentId)
+      
+      // Remove from local state
+      setDeployments((prev) => prev.filter((d) => d.deploymentId !== deploymentId))
+      
+      // Show success message (optional)
+      console.log('Deployment deleted successfully')
+    } catch (err: any) {
+      console.error('Failed to delete deployment:', err)
+      alert(err.message || 'Failed to delete deployment')
+    } finally {
+      setDeletingId(null)
+    }
+  }
+
+  const canDelete = (status: string) => {
+    // Allow deletion for failed or incomplete deployments
+    return ['FAILED', 'POLL_STATUS_FAILED', 'VALIDATION_FAILED', 'ROLLBACK_COMPLETE'].includes(status)
+  }
+
   if (loading) {
     return (
-      <div className="deployment-history-page">
-        <div className="loading-container">
-          <div className="spinner"></div>
-          <p>Loading deployments...</p>
+      <>
+        <Navbar />
+        <div className="deployment-history-page">
+          <div className="loading-container">
+            <div className="spinner"></div>
+            <p>Loading deployments...</p>
+          </div>
         </div>
-      </div>
+      </>
     )
   }
 
   if (error) {
     return (
-      <div className="deployment-history-page">
-        <div className="error-container">
-          <h2>Error Loading Deployments</h2>
-          <p>{error}</p>
-          <button onClick={loadDeployments}>Retry</button>
+      <>
+        <Navbar />
+        <div className="deployment-history-page">
+          <div className="error-container">
+            <h2>Error Loading Deployments</h2>
+            <p>{error}</p>
+            <button onClick={loadDeployments}>Retry</button>
+          </div>
         </div>
-      </div>
+      </>
     )
   }
 
   return (
-    <div className="deployment-history-page">
+    <>
+      <Navbar />
+      <div className="deployment-history-page">
       <div className="page-header">
         <div className="header-content">
-          <Link to="/" className="back-link">
-            ← Back to Home
-          </Link>
           <h1>Deployment History</h1>
           <p className="subtitle">
             View all your CloudFormation stack deployments
@@ -139,7 +175,7 @@ export function DeploymentHistoryPage() {
               <div className="stat-value">
                 {
                   deployments.filter(
-                    (d) => d.status === 'IN_PROGRESS' || d.status === 'VALIDATING'
+                    (d) => d.status === 'IN_PROGRESS' || d.status === 'VALIDATING' || d.status === 'ROLLBACK_IN_PROGRESS'
                   ).length
                 }
               </div>
@@ -149,7 +185,7 @@ export function DeploymentHistoryPage() {
               <div className="stat-value">
                 {
                   deployments.filter(
-                    (d) => d.status === 'FAILED' || d.status === 'POLL_STATUS_FAILED'
+                    (d) => d.status === 'FAILED' || d.status === 'POLL_STATUS_FAILED' || d.status === 'VALIDATION_FAILED' || d.status === 'ROLLBACK_COMPLETE'
                   ).length
                 }
               </div>
@@ -240,6 +276,15 @@ export function DeploymentHistoryPage() {
                   >
                     AWS Console ↗
                   </a>
+                  {canDelete(deployment.status) && (
+                    <button
+                      className="action-link delete-link"
+                      onClick={(e) => handleDeleteDeployment(deployment.deploymentId, e)}
+                      disabled={deletingId === deployment.deploymentId}
+                    >
+                      {deletingId === deployment.deploymentId ? 'Deleting...' : '🗑️ Delete'}
+                    </button>
+                  )}
                 </div>
               </div>
             ))}
@@ -247,5 +292,6 @@ export function DeploymentHistoryPage() {
         </div>
       )}
     </div>
+    </>
   )
 }

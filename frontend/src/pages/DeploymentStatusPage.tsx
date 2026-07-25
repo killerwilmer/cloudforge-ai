@@ -1,3 +1,4 @@
+import { Navbar } from '@/components/Navbar'
 import { deploymentService } from '@/services/deployment.service'
 import type { Deployment, StackResource } from '@/types'
 import { useEffect, useState } from 'react'
@@ -14,6 +15,8 @@ export function DeploymentStatusPage() {
   const [deployment, setDeployment] = useState<Deployment | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [deleting, setDeleting] = useState(false)
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
 
   useEffect(() => {
     console.log('DeploymentStatusPage: mounted', { deploymentId })
@@ -70,24 +73,37 @@ export function DeploymentStatusPage() {
 
   const getStatusIcon = (status: string) => {
     if (status === 'COMPLETED') return '✓'
-    if (status === 'FAILED' || status === 'POLL_STATUS_FAILED') return '✗'
-    if (status === 'IN_PROGRESS' || status === 'VALIDATING') return '⟳'
+    if (status === 'DELETED') return '🗑️'
+    if (status === 'FAILED' || status === 'POLL_STATUS_FAILED' || status === 'VALIDATION_FAILED' || status === 'ROLLBACK_COMPLETE') return '✗'
+    if (status === 'IN_PROGRESS' || status === 'VALIDATING' || status === 'DELETING' || status === 'ROLLBACK_IN_PROGRESS') return '⟳'
     return '○'
   }
 
   const getStatusClass = (status: string) => {
     if (status === 'COMPLETED') return 'status-success'
-    if (status === 'FAILED' || status === 'POLL_STATUS_FAILED') return 'status-error'
-    if (status === 'IN_PROGRESS' || status === 'VALIDATING') return 'status-progress'
+    if (status === 'DELETED') return 'status-deleted'
+    if (status === 'FAILED' || status === 'POLL_STATUS_FAILED' || status === 'VALIDATION_FAILED' || status === 'ROLLBACK_COMPLETE') return 'status-error'
+    if (status === 'IN_PROGRESS' || status === 'VALIDATING' || status === 'DELETING' || status === 'ROLLBACK_IN_PROGRESS') return 'status-progress'
     return 'status-pending'
   }
 
-  const getResourceStatusClass = (status: string) => {
-    if (status.includes('COMPLETE') && !status.includes('ROLLBACK'))
-      return 'resource-success'
-    if (status.includes('FAILED')) return 'resource-error'
-    if (status.includes('IN_PROGRESS')) return 'resource-progress'
-    return 'resource-pending'
+  const handleDeleteStack = async () => {
+    if (!deploymentId) return
+    
+    setDeleting(true)
+    setError(null)
+    
+    try {
+      await deploymentService.deleteDeployment(deploymentId)
+      setShowDeleteConfirm(false)
+      // Reload deployment to show DELETING status
+      await loadDeployment(deploymentId)
+    } catch (err: any) {
+      console.error('Failed to delete stack:', err)
+      setError(err.message || 'Failed to delete stack')
+    } finally {
+      setDeleting(false)
+    }
   }
 
   const groupResourcesByStatus = (resources: StackResource[] = []) => {
@@ -136,55 +152,70 @@ export function DeploymentStatusPage() {
 
   if (loading && !deployment) {
     return (
-      <div className="deployment-status-page">
-        <div className="loading-container">
-          <div className="spinner"></div>
-          <p>Loading deployment status...</p>
-          <p style={{ fontSize: '0.8rem', color: '#9ca3af', marginTop: '1rem' }}>
-            Deployment ID: {deploymentId}
-          </p>
+      <>
+        <Navbar />
+        <div className="deployment-status-page">
+          <div className="loading-container">
+            <div className="spinner"></div>
+            <p>Loading deployment status...</p>
+            <p style={{ fontSize: '0.8rem', color: '#9ca3af', marginTop: '1rem' }}>
+              Deployment ID: {deploymentId}
+            </p>
+          </div>
         </div>
-      </div>
+      </>
     )
   }
 
   if (error) {
     return (
-      <div className="deployment-status-page">
-        <div className="error-container">
-          <h2>Error Loading Deployment</h2>
-          <p>{error}</p>
-          <button onClick={() => navigate('/deployments')}>
-            Back to Deployments
-          </button>
+      <>
+        <Navbar />
+        <div className="deployment-status-page">
+          <div className="error-container">
+            <h2>Error Loading Deployment</h2>
+            <p>{error}</p>
+            <button onClick={() => navigate('/deployments')}>
+              Back to Deployments
+            </button>
+          </div>
         </div>
-      </div>
+      </>
     )
   }
 
   if (!deployment) {
     return (
-      <div className="deployment-status-page">
-        <div className="error-container">
-          <h2>Deployment Not Found</h2>
-          <button onClick={() => navigate('/deployments')}>
-            Back to Deployments
-          </button>
+      <>
+        <Navbar />
+        <div className="deployment-status-page">
+          <div className="error-container">
+            <h2>Deployment Not Found</h2>
+            <button onClick={() => navigate('/deployments')}>
+              Back to Deployments
+            </button>
+          </div>
         </div>
-      </div>
+      </>
     )
   }
 
   const resourceGroups = groupResourcesByStatus(deployment.resources)
   const isInProgress =
-    deployment.status === 'IN_PROGRESS' || deployment.status === 'VALIDATING'
+    deployment.status === 'IN_PROGRESS' || deployment.status === 'VALIDATING' || deployment.status === 'DELETING'
   const isComplete = deployment.status === 'COMPLETED'
   const isFailed =
-    deployment.status === 'FAILED' || deployment.status === 'POLL_STATUS_FAILED'
+    deployment.status === 'FAILED' || 
+    deployment.status === 'POLL_STATUS_FAILED' || 
+    deployment.status === 'VALIDATION_FAILED' || 
+    deployment.status === 'ROLLBACK_COMPLETE'
+  const canDelete = isFailed // Only allow deleting failed deployments
   const consoleUrl = getAWSConsoleUrl(deployment.region, deployment.stackId)
 
   return (
-    <div className="deployment-status-page">
+    <>
+      <Navbar />
+      <div className="deployment-status-page">
       <div className="deployment-header">
         <div className="header-content">
           <Link to="/deployments" className="back-link">
@@ -206,17 +237,58 @@ export function DeploymentStatusPage() {
             )}
           </div>
         </div>
-        {consoleUrl && (
-          <a
-            href={consoleUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="console-link"
-          >
-            View in AWS Console →
-          </a>
-        )}
+        <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
+          {consoleUrl && (
+            <a
+              href={consoleUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="console-link"
+            >
+              View in AWS Console →
+            </a>
+          )}
+          {canDelete && (
+            <button
+              className="btn-delete"
+              onClick={() => setShowDeleteConfirm(true)}
+              disabled={deleting}
+            >
+              {deleting ? '🗑️ Deleting...' : '🗑️ Delete Stack'}
+            </button>
+          )}
+        </div>
       </div>
+
+      {showDeleteConfirm && (
+        <div className="delete-confirm-dialog">
+          <div className="dialog-content">
+            <h3>⚠️ Delete Stack</h3>
+            <p>
+              Are you sure you want to delete <strong>{deployment.stackName}</strong>?
+            </p>
+            <p style={{ color: '#ef4444', fontSize: '0.9rem' }}>
+              This will permanently delete all AWS resources in this stack. This action cannot be undone.
+            </p>
+            <div className="dialog-actions">
+              <button
+                className="btn btn-secondary"
+                onClick={() => setShowDeleteConfirm(false)}
+                disabled={deleting}
+              >
+                Cancel
+              </button>
+              <button
+                className="btn btn-danger"
+                onClick={handleDeleteStack}
+                disabled={deleting}
+              >
+                {deleting ? 'Deleting...' : 'Yes, Delete Stack'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       <div className="deployment-status-section">
         <h2>Deployment Status</h2>
@@ -343,5 +415,6 @@ export function DeploymentStatusPage() {
         </div>
       )}
     </div>
+    </>
   )
 }

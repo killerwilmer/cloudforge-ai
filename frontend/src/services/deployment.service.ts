@@ -114,7 +114,7 @@ export class DeploymentService {
           onUpdate(deployment)
 
           // Stop polling if deployment is complete or failed
-          const terminalStatuses = ['COMPLETED', 'FAILED', 'POLL_STATUS_FAILED']
+          const terminalStatuses = ['COMPLETED', 'FAILED', 'POLL_STATUS_FAILED', 'DELETED']
           if (terminalStatuses.includes(deployment.status)) {
             isPolling = false
             break
@@ -137,6 +137,31 @@ export class DeploymentService {
     return () => {
       isPolling = false
     }
+  }
+
+  /**
+   * Delete deployment stack
+   */
+  async deleteDeployment(deploymentId: string): Promise<void> {
+    const token = getAuthToken()
+    if (!token) {
+      throw new Error('Authentication required')
+    }
+
+    const response = await fetch(`${this.baseUrl}/${deploymentId}`, {
+      method: 'DELETE',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`,
+      },
+    })
+
+    if (!response.ok) {
+      const error = await response.json()
+      throw new Error(error.message || 'Failed to delete deployment')
+    }
+
+    return response.json()
   }
 }
 
