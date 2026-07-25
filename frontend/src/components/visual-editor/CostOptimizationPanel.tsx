@@ -76,7 +76,7 @@ export function CostOptimizationPanel({
         throw new Error('Not authenticated');
       }
 
-      const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3000';
+      const apiUrl = import.meta.env.VITE_API_BASE_URL || 'https://api.cloudforge.ai';
       
       const response = await fetch(`${apiUrl}/api/architectures/estimate-cost`, {
         method: 'POST',
@@ -117,7 +117,7 @@ export function CostOptimizationPanel({
         throw new Error('Not authenticated');
       }
 
-      const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3000';
+      const apiUrl = import.meta.env.VITE_API_BASE_URL || 'https://api.cloudforge.ai';
       
       const response = await fetch(`${apiUrl}/api/architectures/optimize-cost`, {
         method: 'POST',
