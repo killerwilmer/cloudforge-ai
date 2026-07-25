@@ -1,4 +1,4 @@
-import { BedrockRuntimeClient, InvokeModelCommand } from '@aws-sdk/client-bedrock-runtime';
+import { BedrockRuntimeClient } from '@aws-sdk/client-bedrock-runtime';
 import { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda';
 import type { Architecture } from '../../shared/types/index.js';
 
@@ -203,33 +203,84 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
     
     console.log('Sending optimization prompt to Bedrock...');
     
-    // Call Bedrock for optimization recommendations
-    const bedrockRequest = {
-      anthropic_version: 'bedrock-2023-05-31',
-      max_tokens: 4096,
-      temperature: 0.3, // Lower temperature for more consistent recommendations
+    // Call Bedrock using Converse API (same as generate-architecture)
+    const command = new ConverseCommand({
+      modelId: 'us.anthropic.claude-haiku-4-5-20251001-v1:0', // Use same model as generate-architecture
       messages: [
         {
           role: 'user',
-          content: prompt,
+          content: [{ text: prompt }],
         },
       ],
-    };
-    
-    const command = new InvokeModelCommand({
-      modelId: 'us.anthropic.claude-haiku-4-5-20251001-v1:0', // Use same model as generate-architecture
-      contentType: 'application/json',
-      accept: 'application/json',
-      body: JSON.stringify(bedrockRequest),
+      inferenceConfig: {
+        maxTokens: 4096,
+        temperature: 0.3, // Lower temperature for more consistent recommendations
+      },
     });
     
     const bedrockResponse = await bedrockClient.send(command);
-    const responseBody = JSON.parse(new TextDecoder().decode(bedrockResponse.body));
     
-    console.log('Bedrock response:', JSON.stringify(responseBody, null, 2));
+    if (!bedrockResponse.output || !bedrockResponse.output.message) {
+      console.error('Bedrock returned no output');
+      return {
+        statusCode: 500,
+        headers: {
+          'Content-Type': 'application/json',
+          'Access-Control-Allow-Origin': '*',
+        },
+        body: JSON.stringify({
+          error: 'AI model did not return a response',
+        }),
+      };
+    }
     
-    // Extract AI-generated text
-    const aiResponseText = responseBody.content[0].text;
+    // Extract text from response
+    const content = bedrockResponse.output.message.content;
+    if (!content || content.length === 0) {
+      console.error('Bedrock returned empty content');
+      return {
+        statusCode: 500,
+        headers: {
+          'Content-Type': 'application/json',
+          'Access-Control-Allow-Origin': '*',
+        },
+        body: JSON.stringify({
+          error: 'AI model returned empty response',
+        }),
+      };
+    }
+    
+    const textContent = content[0];
+    if (!textContent || !('text' in textContent)) {
+      console.error('Bedrock content has no text field');
+      return {
+        statusCode: 500,
+        headers: {
+          'Content-Type': 'application/json',
+          'Access-Control-Allow-Origin': '*',
+        },
+        body: JSON.stringify({
+          error: 'AI model response format invalid',
+        }),
+      };
+    }
+    
+    const aiResponseText = textContent.text;
+    if (!aiResponseText) {
+      console.error('Bedrock text content is empty');
+      return {
+        statusCode: 500,
+        headers: {
+          'Content-Type': 'application/json',
+          'Access-Control-Allow-Origin': '*',
+        },
+        body: JSON.stringify({
+          error: 'AI model returned empty text',
+        }),
+      };
+    }
+    
+    console.log('Bedrock response:', aiResponseText);
     
     // Parse recommendations
     const recommendations = parseAIResponse(aiResponseText);
