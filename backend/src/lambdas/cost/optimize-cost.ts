@@ -217,7 +217,7 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
     };
     
     const command = new InvokeModelCommand({
-      modelId: 'anthropic.claude-3-5-sonnet-20241022-v2:0', // Updated to latest version
+      modelId: 'us.anthropic.claude-haiku-4-5-20251001-v1:0', // Use same model as generate-architecture
       contentType: 'application/json',
       accept: 'application/json',
       body: JSON.stringify(bedrockRequest),
