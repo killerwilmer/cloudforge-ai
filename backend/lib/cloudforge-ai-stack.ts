@@ -777,6 +777,92 @@ export class CloudForgeAIStack extends cdk.Stack {
       }
     )
 
+    // ========================================
+    // Cost Optimization Lambda Functions
+    // ========================================
+
+    // Environment variables for cost optimization Lambdas
+    const costEnv = {
+      LOG_LEVEL: 'INFO',
+    }
+
+    // Estimate cost Lambda
+    const estimateCostLambda = new lambda.Function(
+      this,
+      'EstimateCostFunction',
+      {
+        runtime: lambda.Runtime.NODEJS_20_X,
+        handler: 'lambdas/cost/estimate-cost.handler',
+        code: lambda.Code.fromAsset('src'),
+        environment: costEnv,
+        timeout: cdk.Duration.seconds(15),
+        memorySize: 512,
+        layers: [sharedLayer],
+      }
+    )
+
+    // Optimize cost Lambda (uses Bedrock AI)
+    const optimizeCostLambda = new lambda.Function(
+      this,
+      'OptimizeCostFunction',
+      {
+        runtime: lambda.Runtime.NODEJS_20_X,
+        handler: 'lambdas/cost/optimize-cost.handler',
+        code: lambda.Code.fromAsset('src'),
+        environment: costEnv,
+        timeout: cdk.Duration.seconds(30), // 30s for AI optimization
+        memorySize: 1024, // More memory for AI processing
+        layers: [sharedLayer],
+      }
+    )
+
+    // Grant Bedrock permissions for optimization Lambda
+    optimizeCostLambda.addToRolePolicy(
+      new iam.PolicyStatement({
+        effect: iam.Effect.ALLOW,
+        actions: ['bedrock:InvokeModel', 'bedrock:InvokeModelWithResponseStream'],
+        resources: [
+          `arn:aws:bedrock:*::foundation-model/*`,
+          `arn:aws:bedrock:*:${this.account}:inference-profile/*`,
+        ],
+      })
+    )
+
+    // Cost optimization API routes
+    // POST /api/architectures/estimate-cost - Estimate architecture cost
+    architecturesResource.addResource('estimate-cost').addMethod(
+      'POST',
+      new apigateway.LambdaIntegration(estimateCostLambda),
+      {
+        authorizer: authorizer,
+        authorizationType: apigateway.AuthorizationType.COGNITO,
+        methodResponses: [
+          { statusCode: '200' },
+          { statusCode: '400' },
+          { statusCode: '401' },
+          { statusCode: '500' },
+        ],
+      }
+    )
+
+    // POST /api/architectures/optimize-cost - Get cost optimization recommendations
+    architecturesResource.addResource('optimize-cost').addMethod(
+      'POST',
+      new apigateway.LambdaIntegration(optimizeCostLambda, {
+        timeout: cdk.Duration.seconds(29), // Slightly less than Lambda timeout
+      }),
+      {
+        authorizer: authorizer,
+        authorizationType: apigateway.AuthorizationType.COGNITO,
+        methodResponses: [
+          { statusCode: '200' },
+          { statusCode: '400' },
+          { statusCode: '401' },
+          { statusCode: '500' },
+        ],
+      }
+    )
+
     // AWS Connection routes
     const awsConnectionResource = apiResource.addResource('aws-connection')
 

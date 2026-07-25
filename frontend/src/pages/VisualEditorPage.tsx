@@ -1,5 +1,6 @@
 import { Navbar } from '@/components/Navbar'
 import { CloudFormationPreview } from '@/components/visual-editor/CloudFormationPreview'
+import { CostOptimizationPanel } from '@/components/visual-editor/CostOptimizationPanel'
 import { CustomEdge } from '@/components/visual-editor/CustomEdge'
 import { LoadDiagramDialog } from '@/components/visual-editor/LoadDiagramDialog'
 import { SaveDiagramDialog } from '@/components/visual-editor/SaveDiagramDialog'
@@ -95,6 +96,7 @@ export function VisualEditorPage({ initialArchitecture }: VisualEditorPageProps)
   const [showLoadDialog, setShowLoadDialog] = useState(false)
   const [showRecoveryPrompt, setShowRecoveryPrompt] = useState(false)
   const [showCloudFormationPreview, setShowCloudFormationPreview] = useState(false)
+  const [showCostOptimization, setShowCostOptimization] = useState(false)
 
   // Load initial architecture from props, navigation state, or context
   useEffect(() => {
@@ -513,6 +515,11 @@ export function VisualEditorPage({ initialArchitecture }: VisualEditorPageProps)
     setShowRecoveryPrompt(false)
   }
 
+  const handleApplyOptimizations = useCallback((optimizedArchitecture: Architecture) => {
+    loadArchitecture(optimizedArchitecture)
+    setShowCostOptimization(false)
+  }, [loadArchitecture])
+
   return (
     <>
       <Navbar />
@@ -607,6 +614,14 @@ export function VisualEditorPage({ initialArchitecture }: VisualEditorPageProps)
           >
             <span className="icon">☁️</span> CloudFormation
           </button>
+          <button 
+            className="btn-secondary" 
+            onClick={() => setShowCostOptimization(true)} 
+            title="Estimate costs and get AI-powered optimization recommendations"
+            disabled={nodes.length === 0}
+          >
+            <span className="icon">💰</span> Optimize Costs
+          </button>
         </div>
 
         {/* Dialogs */}
@@ -652,6 +667,14 @@ export function VisualEditorPage({ initialArchitecture }: VisualEditorPageProps)
           <CloudFormationPreview
             architecture={exportArchitecture()}
             onClose={() => setShowCloudFormationPreview(false)}
+          />
+        )}
+
+        {showCostOptimization && (
+          <CostOptimizationPanel
+            architecture={exportArchitecture()}
+            onApplyOptimizations={handleApplyOptimizations}
+            onClose={() => setShowCostOptimization(false)}
           />
         )}
       </div>
