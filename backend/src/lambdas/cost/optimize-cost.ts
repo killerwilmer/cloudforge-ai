@@ -1,5 +1,5 @@
-import { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda';
 import { BedrockRuntimeClient, InvokeModelCommand } from '@aws-sdk/client-bedrock-runtime';
+import { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda';
 import type { Architecture } from '../../shared/types/index.js';
 
 const bedrockClient = new BedrockRuntimeClient({ region: process.env.AWS_REGION || 'us-east-1' });
@@ -217,7 +217,7 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
     };
     
     const command = new InvokeModelCommand({
-      modelId: 'anthropic.claude-3-5-sonnet-20240620-v1:0',
+      modelId: 'anthropic.claude-3-5-sonnet-20241022-v2:0', // Updated to latest version
       contentType: 'application/json',
       accept: 'application/json',
       body: JSON.stringify(bedrockRequest),
