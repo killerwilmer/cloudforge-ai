@@ -53,6 +53,14 @@ export interface Resource {
 export interface Parameter {
   Type: string
   Description?: string
+  Default?: string | number | boolean
+  AllowedPattern?: string
+  AllowedValues?: (string | number)[]
+  ConstraintDescription?: string
+  MinLength?: number
+  MaxLength?: number
+  MinValue?: number
+  MaxValue?: number
   Default?: unknown
 }
 
