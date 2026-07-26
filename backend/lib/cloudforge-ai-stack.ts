@@ -863,6 +863,51 @@ export class CloudForgeAIStack extends cdk.Stack {
       }
     )
 
+    // Security analysis Lambda (uses Bedrock AI)
+    const analyzeSecurityLambda = new lambda.Function(
+      this,
+      'AnalyzeSecurityFunction',
+      {
+        runtime: lambda.Runtime.NODEJS_20_X,
+        handler: 'lambdas/security/analyze-security.handler',
+        code: lambda.Code.fromAsset('src'),
+        environment: costEnv, // Reuse cost env (has Bedrock access)
+        timeout: cdk.Duration.seconds(30), // 30s for AI analysis
+        memorySize: 1024,
+        layers: [sharedLayer],
+      }
+    )
+
+    // Grant Bedrock permissions for security Lambda
+    analyzeSecurityLambda.addToRolePolicy(
+      new iam.PolicyStatement({
+        effect: iam.Effect.ALLOW,
+        actions: ['bedrock:InvokeModel', 'bedrock:InvokeModelWithResponseStream'],
+        resources: [
+          `arn:aws:bedrock:*::foundation-model/*`,
+          `arn:aws:bedrock:*:${this.account}:inference-profile/*`,
+        ],
+      })
+    )
+
+    // POST /api/architectures/analyze-security - Analyze security vulnerabilities
+    architecturesResource.addResource('analyze-security').addMethod(
+      'POST',
+      new apigateway.LambdaIntegration(analyzeSecurityLambda, {
+        timeout: cdk.Duration.seconds(29),
+      }),
+      {
+        authorizer: authorizer,
+        authorizationType: apigateway.AuthorizationType.COGNITO,
+        methodResponses: [
+          { statusCode: '200' },
+          { statusCode: '400' },
+          { statusCode: '401' },
+          { statusCode: '500' },
+        ],
+      }
+    )
+
     // AWS Connection routes
     const awsConnectionResource = apiResource.addResource('aws-connection')
 
