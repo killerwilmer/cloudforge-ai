@@ -1,0 +1,253 @@
+.cost-comparison-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.85);
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+
+.cost-comparison-container {
+  background: #1a1a1a;
+  border-radius: 12px;
+  width: 100%;
+  height: 100%;
+  max-width: 1800px;
+  max-height: 1000px;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+  overflow: hidden;
+}
+
+/* Header */
+.comparison-header {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  padding: 20px 30px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 2px solid rgba(255, 255, 255, 0.1);
+}
+
+.header-content {
+  flex: 1;
+}
+
+.comparison-header h2 {
+  margin: 0 0 10px 0;
+  color: white;
+  font-size: 24px;
+  font-weight: 700;
+}
+
+.savings-summary {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+}
+
+.savings-badge {
+  background: rgba(255, 255, 255, 0.2);
+  backdrop-filter: blur(10px);
+  padding: 8px 16px;
+  border-radius: 20px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: white;
+}
+
+.savings-label {
+  font-size: 13px;
+  opacity: 0.9;
+}
+
+.savings-amount {
+  font-size: 20px;
+  font-weight: 700;
+  color: #10b981;
+}
+
+.savings-percent {
+  font-size: 13px;
+  opacity: 0.9;
+}
+
+.header-actions {
+  display: flex;
+  gap: 10px;
+}
+
+/* Split View */
+.comparison-content {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 2px;
+  flex: 1;
+  background: #2a2a2a;
+  overflow: hidden;
+}
+
+.comparison-panel {
+  display: flex;
+  flex-direction: column;
+  background: #1a1a1a;
+  overflow: hidden;
+}
+
+.panel-header {
+  padding: 15px 20px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 2px solid #2a2a2a;
+}
+
+.panel-header.original {
+  background: linear-gradient(135deg, #4a5568 0%, #2d3748 100%);
+}
+
+.panel-header.optimized {
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+}
+
+.panel-header h3 {
+  margin: 0;
+  color: white;
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.cost-badge {
+  background: rgba(0, 0, 0, 0.3);
+  padding: 6px 14px;
+  border-radius: 16px;
+  color: white;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.cost-badge.optimized {
+  background: rgba(16, 185, 129, 0.3);
+}
+
+.panel-canvas {
+  flex: 1;
+  position: relative;
+  overflow: hidden;
+}
+
+/* Recommendations Footer */
+.recommendations-footer {
+  background: #1a1a1a;
+  border-top: 2px solid #2a2a2a;
+  padding: 20px 30px;
+  max-height: 250px;
+  overflow-y: auto;
+}
+
+.recommendations-footer h3 {
+  margin: 0 0 15px 0;
+  color: white;
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.recommendations-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(400px, 1fr));
+  gap: 15px;
+}
+
+.recommendation-item {
+  background: #2a2a2a;
+  border: 1px solid #3a3a3a;
+  border-radius: 8px;
+  padding: 12px 16px;
+}
+
+.recommendation-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.service-name {
+  color: white;
+  font-weight: 600;
+  font-size: 14px;
+}
+
+.recommendation-item .savings-badge {
+  background: #10b981;
+  color: white;
+  padding: 4px 10px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.recommendation-change {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+  font-size: 13px;
+}
+
+.change-from {
+  color: #ef4444;
+  font-weight: 500;
+}
+
+.change-arrow {
+  color: #6b7280;
+}
+
+.change-to {
+  color: #10b981;
+  font-weight: 600;
+}
+
+.recommendation-reasoning {
+  color: #9ca3af;
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+/* Scrollbar styling */
+.recommendations-footer::-webkit-scrollbar {
+  width: 8px;
+}
+
+.recommendations-footer::-webkit-scrollbar-track {
+  background: #1a1a1a;
+}
+
+.recommendations-footer::-webkit-scrollbar-thumb {
+  background: #3a3a3a;
+  border-radius: 4px;
+}
+
+.recommendations-footer::-webkit-scrollbar-thumb:hover {
+  background: #4a4a4a;
+}
+
+/* Responsive */
+@media (max-width: 1400px) {
+  .comparison-content {
+    grid-template-columns: 1fr;
+    grid-template-rows: 1fr 1fr;
+  }
+  
+  .recommendations-list {
+    grid-template-columns: 1fr;
+  }
+}

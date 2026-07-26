@@ -49,13 +49,19 @@ interface CostOptimizationResult {
 
 interface CostOptimizationPanelProps {
   architecture: Architecture;
-  onApplyOptimizations: (optimizedArchitecture: Architecture) => void;
+  onShowComparison: (
+    originalArchitecture: Architecture,
+    optimizedArchitecture: Architecture,
+    recommendations: OptimizationRecommendation[],
+    totalSavings: number,
+    savingsPercentage: number
+  ) => void;
   onClose: () => void;
 }
 
 export function CostOptimizationPanel({
   architecture,
-  onApplyOptimizations,
+  onShowComparison,
   onClose,
 }: CostOptimizationPanelProps) {
   const [costEstimate, setCostEstimate] = useState<CostEstimate | null>(null);
@@ -146,9 +152,15 @@ export function CostOptimizationPanel({
     }
   };
 
-  const handleApplyOptimizations = () => {
+  const handleViewComparison = () => {
     if (optimizationResult?.optimizedArchitecture) {
-      onApplyOptimizations(optimizationResult.optimizedArchitecture);
+      onShowComparison(
+        architecture,
+        optimizationResult.optimizedArchitecture,
+        optimizationResult.recommendations,
+        optimizationResult.totalMonthlySavings,
+        optimizationResult.savingsPercentage
+      );
       onClose();
     }
   };
@@ -325,10 +337,10 @@ export function CostOptimizationPanel({
 
                   <div className="action-buttons">
                     <button
-                      className="btn btn-success"
-                      onClick={handleApplyOptimizations}
+                      className="btn btn-primary"
+                      onClick={handleViewComparison}
                     >
-                      ✅ Apply All Optimizations
+                      🔍 View Comparison
                     </button>
                     <button className="btn btn-secondary" onClick={() => setOptimizationResult(null)}>
                       ← Back to Cost Estimate
