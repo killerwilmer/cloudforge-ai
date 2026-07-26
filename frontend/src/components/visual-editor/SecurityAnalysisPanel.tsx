@@ -1,3 +1,4 @@
+import { TokenStorage } from '@/utils/token-storage';
 import React, { useState } from 'react';
 import type { Architecture } from '../../types/architecture';
 import './SecurityAnalysisPanel.css';
@@ -56,7 +57,11 @@ const SecurityAnalysisPanel: React.FC<SecurityAnalysisPanelProps> = ({
     setError(null);
 
     try {
-      const token = localStorage.getItem('idToken');
+      const token = TokenStorage.getIdToken();
+      if (!token) {
+        throw new Error('Not authenticated');
+      }
+
       const apiUrl = import.meta.env.VITE_API_BASE_URL || 'https://9awgal4oie.execute-api.us-east-1.amazonaws.com/prod';
       const response = await fetch(
         `${apiUrl}/api/architectures/analyze-security`,
