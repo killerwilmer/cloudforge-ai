@@ -1,9 +1,11 @@
 import { Navbar } from '@/components/Navbar'
 import { CloudFormationPreview } from '@/components/visual-editor/CloudFormationPreview'
+import { CostComparisonView } from '@/components/visual-editor/CostComparisonView'
 import { CostOptimizationPanel } from '@/components/visual-editor/CostOptimizationPanel'
 import { CustomEdge } from '@/components/visual-editor/CustomEdge'
 import { LoadDiagramDialog } from '@/components/visual-editor/LoadDiagramDialog'
 import { SaveDiagramDialog } from '@/components/visual-editor/SaveDiagramDialog'
+import SecurityAnalysisPanel from '@/components/visual-editor/SecurityAnalysisPanel'
 import { ServiceConfigForm } from '@/components/visual-editor/ServiceConfigForm'
 import { useArchitecture } from '@/contexts/ArchitectureContext'
 import { diagramService } from '@/services/diagram.service'
@@ -97,6 +99,15 @@ export function VisualEditorPage({ initialArchitecture }: VisualEditorPageProps)
   const [showRecoveryPrompt, setShowRecoveryPrompt] = useState(false)
   const [showCloudFormationPreview, setShowCloudFormationPreview] = useState(false)
   const [showCostOptimization, setShowCostOptimization] = useState(false)
+  const [showCostComparison, setShowCostComparison] = useState(false)
+  const [showSecurityAnalysis, setShowSecurityAnalysis] = useState(false)
+  const [comparisonData, setComparisonData] = useState<{
+    originalArchitecture: Architecture;
+    optimizedArchitecture: Architecture;
+    recommendations: any[];
+    totalSavings: number;
+    savingsPercentage: number;
+  } | null>(null)
 
   // Load initial architecture from props, navigation state, or context
   useEffect(() => {
@@ -200,33 +211,129 @@ export function VisualEditorPage({ initialArchitecture }: VisualEditorPageProps)
   }, [nodes, edges, setContextArchitecture])
 
   const loadArchitecture = useCallback((architecture: Architecture) => {
+    // Helper function to get config summary for any service
+    const getServiceConfigSummary = (service: any): string => {
+      const config = service.configuration || {};
+      const parts: string[] = [];
+      
+      // Lambda
+      if (service.type === 'Lambda') {
+        if (config.memory) parts.push(`${config.memory}MB`);
+        // Always show architecture, default to x86_64 if not specified
+        const arch = config.architecture || 'x86_64';
+        parts.push(arch === 'arm64' ? 'Graviton2' : 'x86_64');
+        if (config.runtime) parts.push(config.runtime);
+      }
+      
+      // API Gateway
+      if (service.type === 'APIGateway') {
+        if (config.apiType === 'HTTP') {
+          parts.push('HTTP API');
+        } else {
+          parts.push('REST API');
+        }
+      }
+      
+      // DynamoDB
+      if (service.type === 'DynamoDB') {
+        if (config.billingMode === 'PAY_PER_REQUEST') parts.push('On-Demand');
+        if (config.billingMode === 'PROVISIONED') parts.push('Provisioned');
+        if (config.encryption) parts.push('Encrypted');
+      }
+      
+      // RDS
+      if (service.type === 'RDS') {
+        if (config.instanceClass && typeof config.instanceClass === 'string') parts.push(config.instanceClass);
+        if (config.engine) parts.push(config.engine);
+        if (config.multiAZ) parts.push('Multi-AZ');
+      }
+      
+      // S3
+      if (service.type === 'S3') {
+        if (config.versioning) parts.push('Versioning');
+        if (config.encryption) parts.push('Encrypted');
+        if (config.storageClass) parts.push(config.storageClass);
+      }
+      
+      // SQS
+      if (service.type === 'SQS') {
+        if (config.fifo) parts.push('FIFO');
+        if (config.messageRetentionPeriod) parts.push(`${config.messageRetentionPeriod}s retention`);
+      }
+      
+      // SNS
+      if (service.type === 'SNS') {
+        if (config.encryption) parts.push('Encrypted');
+        if (config.fifo) parts.push('FIFO');
+      }
+      
+      // Cognito
+      if (service.type === 'Cognito') {
+        if (config.mfa) parts.push(`MFA: ${config.mfa}`);
+        if (config.emailVerification) parts.push('Email Verify');
+      }
+      
+      // CloudFront
+      if (service.type === 'CloudFront') {
+        if (config.priceClass) parts.push(config.priceClass);
+        if (config.sslProtocol) parts.push(config.sslProtocol);
+      }
+      
+      // CloudWatch
+      if (service.type === 'CloudWatch') {
+        if (config.logRetention) parts.push(`${config.logRetention}d retention`);
+      }
+      
+      return parts.join(' • ');
+    };
+    
     // Convert Architecture services to React Flow nodes
     const newNodes: Node[] = architecture.services.map((service) => {
       const ServiceIcon = getServiceIcon(service.type)
       const color = getServiceColor(service.type)
+      const config = service.configuration || {};
+      const isOptimized = config.optimized === true;
+      const configSummary = getServiceConfigSummary(service);
       
       return {
         id: service.id,
         type: 'default',
         position: service.position,
         data: {
-          label: formatNodeLabel(service.name, ServiceIcon),
+          label: (
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px', position: 'relative' }}>
+              <ServiceIcon size={24} />
+              <div style={{ fontSize: '10px', fontWeight: '600', textAlign: 'center', lineHeight: 1.2 }}>
+                {service.name}
+              </div>
+              {configSummary && (
+                <div style={{ fontSize: '8px', opacity: 0.85, fontWeight: '500', textAlign: 'center', lineHeight: 1.2, maxWidth: '150px' }}>
+                  {configSummary}
+                </div>
+              )}
+              {isOptimized && (
+                <div style={{ fontSize: '7px', background: 'rgba(16, 185, 129, 0.3)', padding: '2px 6px', borderRadius: '8px', color: '#10b981', fontWeight: 'bold', marginTop: '2px' }}>
+                  ✓ Optimized
+                </div>
+              )}
+            </div>
+          ),
           name: service.name, // Store actual name as string
           serviceType: service.type,
           configuration: service.configuration,
         },
         style: {
-          background: color,
+          background: isOptimized ? '#10b981' : color,
           color: 'white',
-          border: '1px solid rgba(255,255,255,0.2)',
-          borderRadius: '6px',
-          padding: '6px 8px',
+          border: isOptimized ? '3px solid #059669' : '1px solid rgba(255,255,255,0.2)',
+          borderRadius: '8px',
+          padding: '10px 12px',
           fontSize: '10px',
           fontWeight: '600',
-          minWidth: '100px',
-          maxWidth: '160px',
+          minWidth: '140px',
+          maxWidth: '200px',
           textAlign: 'center',
-          boxShadow: '0 2px 8px rgba(0,0,0,0.3)',
+          boxShadow: isOptimized ? '0 0 20px rgba(16, 185, 129, 0.4), 0 4px 12px rgba(0,0,0,0.3)' : '0 2px 8px rgba(0,0,0,0.3)',
         },
       }
     })
@@ -515,10 +622,51 @@ export function VisualEditorPage({ initialArchitecture }: VisualEditorPageProps)
     setShowRecoveryPrompt(false)
   }
 
-  const handleApplyOptimizations = useCallback((optimizedArchitecture: Architecture) => {
-    loadArchitecture(optimizedArchitecture)
-    setShowCostOptimization(false)
-  }, [loadArchitecture])
+  const handleShowComparison = useCallback((
+    originalArchitecture: Architecture,
+    optimizedArchitecture: Architecture,
+    recommendations: any[],
+    totalSavings: number,
+    savingsPercentage: number
+  ) => {
+    setComparisonData({
+      originalArchitecture,
+      optimizedArchitecture,
+      recommendations,
+      totalSavings,
+      savingsPercentage,
+    })
+    setShowCostComparison(true)
+  }, [])
+
+  const handleApplyFromComparison = useCallback(() => {
+    if (comparisonData) {
+      loadArchitecture(comparisonData.optimizedArchitecture)
+      setShowCostComparison(false)
+      setComparisonData(null)
+    }
+  }, [comparisonData, loadArchitecture])
+
+  const handleApplySecurityFixes = useCallback((findings: any[]) => {
+    const updatedArchitecture = { ...exportArchitecture() }
+    
+    // Apply security fixes to services
+    findings.forEach((finding) => {
+      if (finding.autoFixable && finding.changes) {
+        const service = updatedArchitecture.services.find((s) => s.id === finding.serviceId)
+        if (service) {
+          // Merge security fix configuration
+          service.configuration = {
+            ...service.configuration,
+            ...finding.changes.configuration,
+          }
+        }
+      }
+    })
+    
+    // Reload architecture with security fixes applied
+    loadArchitecture(updatedArchitecture)
+  }, [exportArchitecture, loadArchitecture])
 
   return (
     <>
@@ -622,6 +770,14 @@ export function VisualEditorPage({ initialArchitecture }: VisualEditorPageProps)
           >
             <span className="icon">💰</span> Optimize Costs
           </button>
+          <button 
+            className="btn-secondary" 
+            onClick={() => setShowSecurityAnalysis(true)} 
+            title="Analyze security vulnerabilities and get remediation recommendations"
+            disabled={nodes.length === 0}
+          >
+            <span className="icon">🛡️</span> Security Review
+          </button>
         </div>
 
         {/* Dialogs */}
@@ -673,8 +829,31 @@ export function VisualEditorPage({ initialArchitecture }: VisualEditorPageProps)
         {showCostOptimization && (
           <CostOptimizationPanel
             architecture={exportArchitecture()}
-            onApplyOptimizations={handleApplyOptimizations}
+            onShowComparison={handleShowComparison}
             onClose={() => setShowCostOptimization(false)}
+          />
+        )}
+
+        {showCostComparison && comparisonData && (
+          <CostComparisonView
+            originalArchitecture={comparisonData.originalArchitecture}
+            optimizedArchitecture={comparisonData.optimizedArchitecture}
+            recommendations={comparisonData.recommendations}
+            totalSavings={comparisonData.totalSavings}
+            savingsPercentage={comparisonData.savingsPercentage}
+            onApply={handleApplyFromComparison}
+            onClose={() => {
+              setShowCostComparison(false)
+              setComparisonData(null)
+            }}
+          />
+        )}
+
+        {showSecurityAnalysis && (
+          <SecurityAnalysisPanel
+            architecture={exportArchitecture()}
+            onApplyFixes={handleApplySecurityFixes}
+            onClose={() => setShowSecurityAnalysis(false)}
           />
         )}
       </div>
