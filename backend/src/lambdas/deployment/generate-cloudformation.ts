@@ -133,12 +133,30 @@ export async function handler(
  * Generate CloudFormation template from Architecture
  */
 function generateTemplate(architecture: Architecture): CloudFormationTemplate {
+  // Generate a sanitized project name with timestamp for uniqueness
+  const baseProjectName = architecture.metadata.name?.replace(/[^a-zA-Z0-9-]/g, '-').toLowerCase() || 'cloudforge-app';
+  const uniqueProjectName = `${baseProjectName}-${Date.now()}`.substring(0, 50); // CloudFormation limit
+  
   const template: CloudFormationTemplate = {
     AWSTemplateFormatVersion: '2010-09-09',
     Description:
       architecture.metadata.description ||
       `CloudForge AI Generated Architecture: ${architecture.metadata.name}`,
-    Parameters: {},
+    Parameters: {
+      ProjectName: {
+        Type: 'String',
+        Description: 'Name of the project (used for resource naming)',
+        Default: uniqueProjectName,
+        AllowedPattern: '^[a-z][a-z0-9-]*$',
+        ConstraintDescription: 'Must start with a lowercase letter and contain only lowercase letters, numbers, and hyphens',
+      },
+      Environment: {
+        Type: 'String',
+        Description: 'Environment name (dev, staging, prod)',
+        Default: 'dev',
+        AllowedValues: ['dev', 'staging', 'prod'],
+      },
+    },
     Resources: {},
     Outputs: {},
   }
@@ -383,32 +401,44 @@ function generateAPIGatewayResource(
 function generateDynamoDBResource(service: any, config: any): any {
   const billingMode = config.billingMode || 'PAY_PER_REQUEST'
 
+  const properties: any = {
+    TableName: { 'Fn::Sub': '${ProjectName}-${Environment}-' + sanitizeResourceName(service.name) },
+    BillingMode: billingMode,
+    AttributeDefinitions: config.attributeDefinitions || [
+      { AttributeName: 'id', AttributeType: 'S' },
+    ],
+    KeySchema: config.keySchema || [{ AttributeName: 'id', KeyType: 'HASH' }],
+    StreamSpecification:
+      config.stream !== false
+        ? {
+            StreamViewType: 'NEW_AND_OLD_IMAGES',
+          }
+        : undefined,
+    SSESpecification:
+      config.encryption !== false
+        ? {
+            SSEEnabled: true,
+          }
+        : undefined,
+    Tags: [
+      { Key: 'ManagedBy', Value: 'CloudForgeAI' },
+      { Key: 'ServiceName', Value: service.name },
+    ],
+  }
+
+  // Add ProvisionedThroughput for PROVISIONED billing mode
+  if (billingMode === 'PROVISIONED') {
+    properties.ProvisionedThroughput = {
+      ReadCapacityUnits: config.provisionedThroughput?.readCapacityUnits || 
+                          config.readCapacityUnits || 5,
+      WriteCapacityUnits: config.provisionedThroughput?.writeCapacityUnits || 
+                           config.writeCapacityUnits || 5,
+    }
+  }
+
   return {
     Type: 'AWS::DynamoDB::Table',
-    Properties: {
-      TableName: { 'Fn::Sub': '${ProjectName}-${Environment}-' + sanitizeResourceName(service.name) },
-      BillingMode: billingMode,
-      AttributeDefinitions: config.attributeDefinitions || [
-        { AttributeName: 'id', AttributeType: 'S' },
-      ],
-      KeySchema: config.keySchema || [{ AttributeName: 'id', KeyType: 'HASH' }],
-      StreamSpecification:
-        config.stream !== false
-          ? {
-              StreamViewType: 'NEW_AND_OLD_IMAGES',
-            }
-          : undefined,
-      SSESpecification:
-        config.encryption !== false
-          ? {
-              SSEEnabled: true,
-            }
-          : undefined,
-      Tags: [
-        { Key: 'ManagedBy', Value: 'CloudForgeAI' },
-        { Key: 'ServiceName', Value: service.name },
-      ],
-    },
+    Properties: properties,
   }
 }
 
