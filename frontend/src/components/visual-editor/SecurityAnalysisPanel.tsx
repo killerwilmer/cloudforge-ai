@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import type { Architecture } from '../../types/architecture';
+import './SecurityAnalysisPanel.css';
 
 interface SecurityFinding {
   id: string;
@@ -56,8 +57,9 @@ const SecurityAnalysisPanel: React.FC<SecurityAnalysisPanelProps> = ({
 
     try {
       const token = localStorage.getItem('idToken');
+      const apiUrl = import.meta.env.VITE_API_BASE_URL || 'https://9awgal4oie.execute-api.us-east-1.amazonaws.com/prod';
       const response = await fetch(
-        `${import.meta.env.VITE_API_URL}/api/architectures/analyze-security`,
+        `${apiUrl}/api/architectures/analyze-security`,
         {
           method: 'POST',
           headers: {
@@ -109,15 +111,15 @@ const SecurityAnalysisPanel: React.FC<SecurityAnalysisPanelProps> = ({
   const getSeverityColor = (severity: string) => {
     switch (severity) {
       case 'critical':
-        return 'bg-red-100 text-red-800 border-red-300';
+        return 'security-severity-critical';
       case 'high':
-        return 'bg-orange-100 text-orange-800 border-orange-300';
+        return 'security-severity-high';
       case 'medium':
-        return 'bg-yellow-100 text-yellow-800 border-yellow-300';
+        return 'security-severity-medium';
       case 'low':
-        return 'bg-blue-100 text-blue-800 border-blue-300';
+        return 'security-severity-low';
       default:
-        return 'bg-gray-100 text-gray-800 border-gray-300';
+        return '';
     }
   };
 
@@ -136,10 +138,17 @@ const SecurityAnalysisPanel: React.FC<SecurityAnalysisPanelProps> = ({
   };
 
   const getScoreColor = (score: number) => {
-    if (score >= 90) return 'text-green-600';
-    if (score >= 70) return 'text-yellow-600';
-    if (score >= 50) return 'text-orange-600';
-    return 'text-red-600';
+    if (score >= 90) return 'text-green';
+    if (score >= 70) return 'text-yellow';
+    if (score >= 50) return 'text-orange';
+    return 'text-red';
+  };
+
+  const getScoreLabelClass = (score: number) => {
+    if (score >= 90) return 'bg-green';
+    if (score >= 70) return 'bg-yellow';
+    if (score >= 50) return 'bg-orange';
+    return 'bg-red';
   };
 
   const getScoreLabel = (score: number) => {
@@ -150,36 +159,29 @@ const SecurityAnalysisPanel: React.FC<SecurityAnalysisPanelProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-lg shadow-xl w-full max-w-6xl max-h-[90vh] overflow-hidden flex flex-col">
+    <div className="security-analysis-overlay">
+      <div className="security-analysis-panel">
         {/* Header */}
-        <div className="bg-gradient-to-r from-purple-600 to-blue-600 text-white p-6">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <span style={{ fontSize: '32px' }}>🛡️</span>
-              <div>
-                <h2 className="text-2xl font-bold">Security Analysis</h2>
-                <p className="text-purple-100 text-sm">Enterprise-grade security review</p>
-              </div>
+        <div className="security-panel-header">
+          <div className="security-header-content">
+            <span className="security-icon">🛡️</span>
+            <div className="security-header-text">
+              <h2>Security Analysis</h2>
+              <p>Enterprise-grade security review</p>
             </div>
-            <button
-              onClick={onClose}
-              className="text-white hover:bg-white hover:bg-opacity-20 rounded-lg p-2 transition-colors"
-            >
-              ✕
-            </button>
           </div>
+          <button onClick={onClose} className="security-close-btn">
+            ✕
+          </button>
         </div>
 
         {/* Content */}
-        <div className="flex-1 overflow-y-auto p-6">
+        <div className="security-panel-content">
           {!result && !isAnalyzing && (
-            <div className="text-center py-12">
-              <span style={{ fontSize: '96px', display: 'block', marginBottom: '24px' }}>🛡️</span>
-              <h3 className="text-2xl font-semibold text-gray-800 mb-3">
-                Ready to Analyze Security
-              </h3>
-              <p className="text-gray-600 mb-6 max-w-xl mx-auto">
+            <div className="security-initial-state">
+              <span className="security-initial-icon">🛡️</span>
+              <h3>Ready to Analyze Security</h3>
+              <p>
                 Scan your architecture for security vulnerabilities, compliance issues, and best
                 practice violations. Get AI-powered recommendations to make your architecture
                 enterprise-grade.
@@ -187,7 +189,7 @@ const SecurityAnalysisPanel: React.FC<SecurityAnalysisPanelProps> = ({
               <button
                 onClick={analyzeSecurity}
                 disabled={!architecture}
-                className="px-8 py-3 bg-gradient-to-r from-purple-600 to-blue-600 text-white font-semibold rounded-lg hover:from-purple-700 hover:to-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-lg"
+                className="security-analyze-btn"
               >
                 Analyze Security
               </button>
@@ -195,74 +197,66 @@ const SecurityAnalysisPanel: React.FC<SecurityAnalysisPanelProps> = ({
           )}
 
           {isAnalyzing && (
-            <div className="text-center py-12">
-              <div className="animate-spin rounded-full h-16 w-16 border-b-4 border-purple-600 mx-auto mb-4"></div>
-              <p className="text-gray-600 text-lg">Analyzing architecture security...</p>
-              <p className="text-gray-500 text-sm mt-2">Checking for vulnerabilities and compliance issues</p>
+            <div className="security-loading-state">
+              <div className="security-spinner"></div>
+              <p>Analyzing architecture security...</p>
+              <p className="loading-subtitle">Checking for vulnerabilities and compliance issues</p>
             </div>
           )}
 
           {error && (
-            <div className="bg-red-50 border-l-4 border-red-500 p-4 mb-6">
-              <div className="flex items-center">
-                <span style={{ fontSize: '20px', marginRight: '12px' }}>❌</span>
-                <p className="text-red-700">{error}</p>
-              </div>
+            <div className="security-error">
+              <span className="security-error-icon">❌</span>
+              <p>{error}</p>
             </div>
           )}
 
           {result && (
-            <div className="space-y-6">
+            <div className="security-results">
               {/* Security Score */}
-              <div className="bg-gradient-to-br from-purple-50 to-blue-50 rounded-lg p-6 border border-purple-200">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-4">
-                    <div className="bg-white rounded-full p-4 shadow">
-                      <span style={{ fontSize: '48px', display: 'block', lineHeight: 1 }} className={getScoreColor(result.score)}>🛡️</span>
+              <div className="security-score-card">
+                <div className="security-score-content">
+                  <div className="security-score-left">
+                    <div className="security-score-icon-wrapper">
+                      <span className={`security-score-icon ${getScoreColor(result.score)}`}>🛡️</span>
                     </div>
-                    <div>
-                      <h3 className="text-lg font-semibold text-gray-700">Security Score</h3>
-                      <div className="flex items-baseline gap-2">
-                        <span className={`text-4xl font-bold ${getScoreColor(result.score)}`}>
+                    <div className="security-score-details">
+                      <h3>Security Score</h3>
+                      <div className="security-score-value">
+                        <span className={`security-score-number ${getScoreColor(result.score)}`}>
                           {result.score}
                         </span>
-                        <span className="text-gray-500">/100</span>
-                        <span className={`ml-2 px-3 py-1 rounded-full text-sm font-semibold ${
-                          result.score >= 90 ? 'bg-green-100 text-green-800' :
-                          result.score >= 70 ? 'bg-yellow-100 text-yellow-800' :
-                          result.score >= 50 ? 'bg-orange-100 text-orange-800' :
-                          'bg-red-100 text-red-800'
-                        }`}>
+                        <span className="security-score-total">/100</span>
+                        <span className={`security-score-label ${getScoreLabelClass(result.score)}`}>
                           {getScoreLabel(result.score)}
                         </span>
                       </div>
                     </div>
                   </div>
 
-                  {/* Severity Counts */}
-                  <div className="flex gap-4">
+                  <div className="security-severity-counts">
                     {result.criticalCount > 0 && (
-                      <div className="text-center">
-                        <div className="text-2xl font-bold text-red-600">{result.criticalCount}</div>
-                        <div className="text-xs text-gray-600">Critical</div>
+                      <div className="security-severity-item">
+                        <span className="security-severity-count text-red">{result.criticalCount}</span>
+                        <span className="security-severity-label">Critical</span>
                       </div>
                     )}
                     {result.highCount > 0 && (
-                      <div className="text-center">
-                        <div className="text-2xl font-bold text-orange-600">{result.highCount}</div>
-                        <div className="text-xs text-gray-600">High</div>
+                      <div className="security-severity-item">
+                        <span className="security-severity-count text-orange">{result.highCount}</span>
+                        <span className="security-severity-label">High</span>
                       </div>
                     )}
                     {result.mediumCount > 0 && (
-                      <div className="text-center">
-                        <div className="text-2xl font-bold text-yellow-600">{result.mediumCount}</div>
-                        <div className="text-xs text-gray-600">Medium</div>
+                      <div className="security-severity-item">
+                        <span className="security-severity-count text-yellow">{result.mediumCount}</span>
+                        <span className="security-severity-label">Medium</span>
                       </div>
                     )}
                     {result.lowCount > 0 && (
-                      <div className="text-center">
-                        <div className="text-2xl font-bold text-blue-600">{result.lowCount}</div>
-                        <div className="text-xs text-gray-600">Low</div>
+                      <div className="security-severity-item">
+                        <span className="security-severity-count" style={{color: '#3b82f6'}}>{result.lowCount}</span>
+                        <span className="security-severity-label">Low</span>
                       </div>
                     )}
                   </div>
@@ -271,12 +265,12 @@ const SecurityAnalysisPanel: React.FC<SecurityAnalysisPanelProps> = ({
 
               {/* AI Insights */}
               {result.aiInsights && (
-                <div className="bg-blue-50 border-l-4 border-blue-500 p-4 rounded">
-                  <div className="flex items-start">
-                    <span style={{ fontSize: '20px', marginRight: '12px', flexShrink: 0 }}>📊</span>
+                <div className="security-insights">
+                  <div className="security-insights-content">
+                    <span className="security-insights-icon">📊</span>
                     <div>
-                      <h4 className="font-semibold text-blue-900 mb-2">AI Security Insights</h4>
-                      <p className="text-blue-800 text-sm whitespace-pre-line">{result.aiInsights}</p>
+                      <h4>AI Security Insights</h4>
+                      <p>{result.aiInsights}</p>
                     </div>
                   </div>
                 </div>
@@ -284,64 +278,63 @@ const SecurityAnalysisPanel: React.FC<SecurityAnalysisPanelProps> = ({
 
               {/* Recommendations */}
               {result.recommendations.length > 0 && (
-                <div className="bg-yellow-50 border-l-4 border-yellow-500 p-4 rounded">
-                  <h4 className="font-semibold text-yellow-900 mb-2">Priority Actions</h4>
-                  <ul className="list-disc list-inside space-y-1">
-                    {result.recommendations.map((rec, idx) => (
-                      <li key={idx} className="text-yellow-800 text-sm">{rec}</li>
-                    ))}
-                  </ul>
+                <div className="security-recommendations">
+                  <div className="security-recommendations-content">
+                    <span className="security-insights-icon">⚠️</span>
+                    <div>
+                      <h4>Priority Actions</h4>
+                      <ul className="security-recommendations-list">
+                        {result.recommendations.map((rec, idx) => (
+                          <li key={idx}>{rec}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  </div>
                 </div>
               )}
 
               {/* Findings List */}
               {result.findings.length > 0 ? (
-                <div>
-                  <h3 className="text-lg font-semibold text-gray-800 mb-4">
-                    Security Findings ({result.totalFindings})
-                  </h3>
-                  <div className="space-y-3">
+                <div className="security-findings-section">
+                  <h3>Security Findings ({result.totalFindings})</h3>
+                  <div className="security-findings-list">
                     {result.findings.map((finding) => (
                       <div
                         key={finding.id}
-                        className={`border rounded-lg p-4 ${getSeverityColor(finding.severity)} transition-all ${
-                          selectedFindings.has(finding.id) ? 'ring-2 ring-purple-500' : ''
-                        }`}
+                        className={`security-finding-card ${selectedFindings.has(finding.id) ? 'selected' : ''}`}
                       >
-                        <div className="flex items-start gap-3">
+                        <div className="security-finding-content">
                           {finding.autoFixable && (
                             <input
                               type="checkbox"
                               checked={selectedFindings.has(finding.id)}
                               onChange={() => toggleFinding(finding.id)}
-                              className="mt-1 w-4 h-4 text-purple-600 rounded focus:ring-purple-500"
+                              className="security-finding-checkbox"
                             />
                           )}
-                          <div className="flex-shrink-0 mt-0.5">
-                            <span style={{ fontSize: '20px' }}>{getSeverityIcon(finding.severity)}</span>
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <div className="flex items-start justify-between gap-3 mb-2">
-                              <div>
-                                <h4 className="font-semibold text-sm">{finding.title}</h4>
-                                <p className="text-xs opacity-75 mt-0.5">
+                          <span className="security-finding-icon">{getSeverityIcon(finding.severity)}</span>
+                          <div className="security-finding-details">
+                            <div className="security-finding-header">
+                              <div className="security-finding-title">
+                                <h4>{finding.title}</h4>
+                                <p className="security-finding-meta">
                                   {finding.serviceName} • {finding.category}
                                 </p>
                               </div>
-                              <div className="flex items-center gap-2 flex-shrink-0">
-                                <span className="px-2 py-1 text-xs font-semibold rounded capitalize">
+                              <div className="security-finding-badges">
+                                <span className={`security-severity-badge ${getSeverityColor(finding.severity)}`}>
                                   {finding.severity}
                                 </span>
                                 {finding.autoFixable && (
-                                  <span className="px-2 py-1 bg-green-100 text-green-800 text-xs font-semibold rounded flex items-center gap-1">
+                                  <span className="security-autofix-badge">
                                     <span>🔒</span>
                                     Auto-fix
                                   </span>
                                 )}
                               </div>
                             </div>
-                            <p className="text-sm mb-2">{finding.description}</p>
-                            <div className="bg-white bg-opacity-50 rounded p-2 text-xs space-y-1">
+                            <p className="security-finding-description">{finding.description}</p>
+                            <div className="security-finding-info">
                               <p><strong>Risk:</strong> {finding.risk}</p>
                               <p><strong>Remediation:</strong> {finding.remediation}</p>
                               <p><strong>Effort:</strong> <span className="capitalize">{finding.effort}</span></p>
@@ -353,14 +346,10 @@ const SecurityAnalysisPanel: React.FC<SecurityAnalysisPanelProps> = ({
                   </div>
                 </div>
               ) : (
-                <div className="text-center py-8 bg-green-50 rounded-lg border border-green-200">
-                  <span style={{ fontSize: '64px', display: 'block', marginBottom: '12px' }}>✅</span>
-                  <h3 className="text-xl font-semibold text-green-800 mb-2">
-                    No Security Issues Found!
-                  </h3>
-                  <p className="text-green-700">
-                    Your architecture follows AWS security best practices.
-                  </p>
+                <div className="security-success-state">
+                  <span className="security-success-icon">✅</span>
+                  <h3>No Security Issues Found!</h3>
+                  <p>Your architecture follows AWS security best practices.</p>
                 </div>
               )}
             </div>
@@ -369,21 +358,21 @@ const SecurityAnalysisPanel: React.FC<SecurityAnalysisPanelProps> = ({
 
         {/* Footer */}
         {result && result.findings.length > 0 && (
-          <div className="border-t bg-gray-50 px-6 py-4 flex items-center justify-between">
-            <div className="text-sm text-gray-600">
+          <div className="security-panel-footer">
+            <div className="security-footer-info">
               {selectedFindings.size} of {result.findings.filter(f => f.autoFixable).length} auto-fixable issues selected
             </div>
-            <div className="flex gap-3">
+            <div className="security-footer-actions">
               <button
                 onClick={onClose}
-                className="px-4 py-2 text-gray-700 hover:bg-gray-200 rounded-lg transition-colors"
+                className="security-footer-btn security-footer-btn-secondary"
               >
                 Close
               </button>
               <button
                 onClick={handleApplyFixes}
                 disabled={selectedFindings.size === 0}
-                className="px-6 py-2 bg-gradient-to-r from-purple-600 to-blue-600 text-white font-semibold rounded-lg hover:from-purple-700 hover:to-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow"
+                className="security-footer-btn security-footer-btn-primary"
               >
                 Apply {selectedFindings.size} Fix{selectedFindings.size !== 1 ? 'es' : ''}
               </button>
