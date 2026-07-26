@@ -61,7 +61,6 @@ export interface Parameter {
   MaxLength?: number
   MinValue?: number
   MaxValue?: number
-  Default?: unknown
 }
 
 export interface Output {
