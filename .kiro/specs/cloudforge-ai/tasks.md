@@ -415,144 +415,224 @@ This implementation plan prioritizes delivering a working demo by July 27, 2026 
     - Manual testing completed with security panel integration
     - _Requirements: 9.1, 9.2, 9.3, 9.4_
 
-- [ ] 16. Implement validation system (prevent deployment failures)
-  - [ ] 16.1 Create validation Lambda function
-    - Check for missing required configurations
-    - Validate IAM permissions needed for deployment
-    - Check for circular dependencies
-    - Validate resource references
-    - _Requirements: 16.1, 16.2, 16.3, 16.4, 16.5_
+- [ ] 16. Implement AI Deployment Assistant (🏆 HACKATHON DIFFERENTIATOR)
+  - [ ] 16.1 Set up WebSocket infrastructure for real-time communication
+    - Deploy API Gateway WebSocket API with CDK
+    - Create $connect, $disconnect, $default route handlers
+    - Implement connection tracking in DynamoDB (connectionId → userId mapping)
+    - Configure WebSocket URL in frontend environment variables
+    - Add WebSocket Lambda permissions for @connections endpoint
+    - _Requirements: 12.1, 12.2, 19.4_
+    - _Time estimate: 2 hours_
   
-  - [ ] 16.2 Build validation UI
-    - Display validation errors before deployment
-    - Show suggestions for fixing each error
-    - Prevent "Deploy" button when critical errors exist
-    - _Requirements: 16.6, 16.7_
+  - [ ] 16.2 Build deployment event streaming system
+    - Create EventBridge rule to capture Step Functions state changes
+    - Implement deployment event processor Lambda function
+    - Parse Step Functions execution events into user-friendly messages
+    - Format events: { phase, resourceType, resourceName, status, timestamp, details }
+    - Stream formatted events to connected WebSocket clients
+    - Handle Step Functions states: ValidateTemplate, AssumeRole, CreateStack, PollStatus, Complete, Failed
+    - _Requirements: 7.3, 7.4, 12.1, 12.2, 12.3_
+    - _Time estimate: 2.5 hours_
   
-  - [ ] 16.3 Write unit tests for validation
-    - Test missing configuration detection
-    - Test circular dependency detection
-    - Test invalid reference detection
-    - _Requirements: 16.1, 16.2, 16.3, 16.4, 16.5_
+  - [ ] 16.3 Implement AI chat assistant with Bedrock streaming
+    - Create AI assistant Lambda with Bedrock InvokeModelWithResponseStream
+    - Design system prompt: "You are an AWS deployment expert assisting users in real-time..."
+    - Provide AI with context: current deployment status, architecture services, CloudFormation template
+    - Handle user questions about deployment progress, errors, and AWS best practices
+    - Stream AI responses token-by-token to WebSocket for fluid UX
+    - Implement conversation history management (store last 10 messages per deployment)
+    - Add proactive AI suggestions: cost optimizations, security improvements, performance tips
+    - _Requirements: 3.1, 7.3, 12.1, 20.2_
+    - _Time estimate: 2 hours_
+  
+  - [ ] 16.4 Build real-time chat UI component
+    - Create DeploymentAssistantPanel component with message list and input
+    - Implement useWebSocket hook for connection management
+    - Design message types: AI messages (left), user messages (right), system events (center)
+    - Add typing indicators when AI is generating response
+    - Display deployment events inline with timestamps (e.g., "✓ S3 bucket created (2s)")
+    - Add message rendering: markdown support, code blocks, AWS resource links
+    - Implement auto-scroll to latest message
+    - Show connection status indicator (connected/disconnected/reconnecting)
+    - _Requirements: 12.1, 12.2, 12.3, 20.2_
+    - _Time estimate: 2.5 hours_
+  
+  - [ ] 16.5 Integrate AI Assistant with deployment flow
+    - Update DeploymentStatusPage to include DeploymentAssistantPanel
+    - Open assistant panel automatically when deployment starts
+    - Send initial AI greeting: "I'll guide you through this deployment..."
+    - Display deployment phase transitions as chat messages
+    - Handle error scenarios with AI-generated troubleshooting advice
+    - Add "Ask AI" button on deployment history page for post-deployment questions
+    - Implement chat export functionality (download conversation as markdown)
+    - _Requirements: 7.3, 7.4, 12.1, 12.6_
+    - _Time estimate: 1.5 hours_
+  
+  - [ ] 16.6 Implement proactive AI recommendations during deployment
+    - Detect deployment patterns and trigger proactive AI suggestions
+    - Monitor for: missing CloudWatch alarms, no caching on API Gateway, unoptimized Lambda memory
+    - Send AI suggestions at appropriate deployment phases (not spammy)
+    - Add "Apply Suggestion" button for one-click improvements
+    - Track suggestion acceptance/rejection for future learning
+    - Display suggestions in highlighted message format
+    - _Requirements: 8.1, 9.1, 12.1, 20.2_
+    - _Time estimate: 1.5 hours_
+  
+  - [ ] 16.7 Add error explanation and recovery guidance
+    - Detect common CloudFormation error patterns from Step Functions failures
+    - Generate AI explanations: translate AWS error codes to human language
+    - Provide step-by-step recovery instructions with AWS Console links
+    - Offer to modify architecture automatically for common fixes
+    - Add "Retry Deployment" button with AI-suggested parameter changes
+    - Show related AWS documentation links for error context
+    - _Requirements: 7.5, 12.5, 19.2, 20.2_
+    - _Time estimate: 1.5 hours_
+  
+  - [ ] 16.8 Write integration tests for AI assistant
+    - Test WebSocket connection lifecycle (connect, message, disconnect)
+    - Test deployment event streaming with mock Step Functions events
+    - Test AI response generation with various deployment scenarios
+    - Test error handling: network disconnection, Lambda timeout, Bedrock throttling
+    - Test chat history persistence and retrieval
+    - Verify message ordering and real-time delivery
+    - Load test: simulate multiple concurrent deployments with AI chat
+    - _Requirements: 7.3, 12.1, 19.1, 19.5_
+    - _Time estimate: 2 hours_
 
 - [ ] 17. Checkpoint - Day 6 deliverables
-  - Verify cost optimization produces valid recommendations
-  - Test security review detects common vulnerabilities
-  - Confirm validation prevents invalid deployments
+  - Verify AI Deployment Assistant provides real-time guidance
+  - Test WebSocket connection stability during deployment
+  - Confirm AI generates helpful suggestions and error explanations
+  - Validate assistant works with successful and failed deployments
+  - Practice demo narrative: "Watch as AI guides me through deployment..."
   - Ask the user if questions arise
 
 ### Day 7: Polish, Testing, and Demo Prep (Jul 26-27)
 
-- [ ] 18. Implement GitHub repository analyzer (stretch differentiator)
-  - [ ] 18.1 Add GitHub OAuth integration
-    - Deploy GitHub OAuth app credentials to Secrets Manager
-    - Create GitHub connection Lambda function
-    - Store GitHub access tokens securely
-    - _Requirements: 17.1, 17.2, 17.5, 17.6_
+- [ ] 18. Polish and production readiness
+  - [ ] 18.1 UI/UX polish pass
+    - Fix visual inconsistencies across pages
+    - Add loading skeletons for better perceived performance
+    - Improve mobile responsiveness for tablet devices
+    - Add error boundary components for graceful error handling
+    - Implement toast notifications for user actions
+    - Polish visual editor: grid snapping, alignment guides, zoom controls
+    - _Requirements: 18.1, 18.2, 18.3, 19.2_
+    - _Time estimate: 3 hours_
   
-  - [ ] 18.2 Create repository analyzer Lambda function
-    - Clone repository securely (read-only)
-    - Detect technology stack from package.json, pom.xml, requirements.txt
-    - Identify databases from connection strings
-    - Generate recommended AWS architecture
-    - _Requirements: 11.1, 11.2, 11.3, 11.4, 11.5, 11.9_
+  - [ ] 18.2 Create example architecture templates
+    - Build 3 ready-to-use templates with "Try Example" buttons
+    - Template 1: REST API (Lambda + API Gateway + DynamoDB)
+    - Template 2: Static Website (S3 + CloudFront + Route53)
+    - Template 3: Event-Driven (Lambda + SQS + SNS + DynamoDB)
+    - Add template descriptions, use cases, and estimated costs
+    - Implement one-click "Load Template" functionality
+    - _Requirements: 20.3, 20.1_
+    - _Time estimate: 2 hours_
   
-  - [ ] 18.3 Build repository import UI
-    - Add GitHub repository selector
-    - Display detected stack and recommendations
-    - Show estimated costs and migration risks
-    - Add "Import Architecture" button
-    - _Requirements: 11.5, 11.6, 11.7, 11.8_
-  
-  - [ ] 18.4 Write integration tests for repository analyzer
-    - Test stack detection for Node.js, Python, Java projects
-    - Test architecture generation
-    - _Requirements: 11.2, 11.3, 11.4, 11.5, 11.9_
-
-- [ ] 19. Add error handling and monitoring infrastructure
-  - [ ] 19.1 Configure CloudWatch logging for all Lambda functions
-    - Set up structured JSON logging
-    - Add request ID tracking for correlation
-    - Configure log retention (30 days)
-    - _Requirements: 19.5_
-  
-  - [ ] 19.2 Set up CloudWatch alarms for critical errors
-    - Create alarm for API error rate >5% over 5 minutes
-    - Create alarm for Lambda timeout rate >10%
-    - Create alarm for deployment failure rate >20%
-    - _Requirements: 19.5_
-  
-  - [ ] 19.3 Implement retry logic with exponential backoff
-    - Add retry wrapper for AWS SDK calls (3 retries: 1s, 2s, 4s)
-    - Distinguish retryable vs non-retryable errors
-    - _Requirements: 19.1_
-  
-  - [ ] 19.4 Write unit tests for error handling
-    - Test retry logic with transient failures
-    - Test error message formatting
-    - Test logging output structure
+  - [ ] 18.3 Add basic error handling improvements
+    - Wrap all Lambda functions with try-catch and structured error logging
+    - Add user-friendly error messages for common failures
+    - Implement automatic retry for transient AWS SDK errors (3 retries with exponential backoff)
+    - Log all errors to CloudWatch with request correlation IDs
     - _Requirements: 19.1, 19.2, 19.5_
+    - _Time estimate: 1.5 hours_
+  
+  - [ ] 18.4 Performance optimizations
+    - Add React.memo to expensive components (visual editor nodes)
+    - Implement lazy loading for Monaco Editor and React Flow
+    - Optimize API calls: debounce auto-save, cache diagram lists
+    - Add service worker for offline diagram recovery
+    - Compress CloudFormation templates before storage
+    - _Requirements: 18.5, 19.3_
+    - _Time estimate: 2 hours_
 
-- [ ] 20. Build example architectures and onboarding
-  - [ ] 20.1 Create example architecture templates
-    - REST API with Lambda + API Gateway + DynamoDB
-    - Static website with S3 + CloudFront
-    - Batch processing with Lambda + SQS + S3
-    - _Requirements: 20.3_
+- [ ] 19. Deploy to production and prepare demo
+  - [ ] 19.1 Deploy frontend to production
+    - Build production frontend bundle (npm run build)
+    - Deploy to AWS Amplify or S3 + CloudFront
+    - Configure custom domain (if available) or use CloudFront URL
+    - Set production environment variables (API endpoints, Cognito)
+    - Enable HTTPS and configure security headers
+    - Test production deployment on multiple browsers
+    - _Requirements: 18.1, 18.4_
+    - _Time estimate: 2 hours_
   
-  - [ ] 20.2 Build onboarding tutorial
-    - Create step-by-step interactive tutorial
-    - Add tooltips for key UI elements
-    - Include video walkthrough link
-    - _Requirements: 20.1, 20.2, 20.4_
+  - [ ] 19.2 Verify backend production deployment
+    - Confirm all Lambda functions deployed via CDK
+    - Test API Gateway endpoints from production frontend
+    - Verify Cognito authentication flow in production
+    - Check CloudWatch logs are being captured
+    - Configure DynamoDB backup retention (7 days)
+    - _Requirements: 18.4, 19.5_
+    - _Time estimate: 1 hour_
   
-  - [ ] 20.3 Add contextual help system
-    - Create tooltip components for AWS services
-    - Add help icons with best practices documentation
-    - Link to AWS documentation for each service
-    - _Requirements: 20.2, 20.6_
-
-- [ ] 21. Deploy to production and create demo materials
-  - [ ] 21.1 Deploy frontend to AWS Amplify
-    - Configure custom domain (if available)
-    - Enable CloudFront CDN
-    - Set up environment variables
-    - _Requirements: 18.1_
+  - [ ] 19.3 Create comprehensive demo script
+    - Write step-by-step demo flow (5 minutes max)
+    - Flow: Login → AI Generate → Visual Edit → Cost Optimize → Security Review → Deploy → AI Assistant helps
+    - Prepare backup recording in case live demo fails
+    - Identify 3 "wow moments" to highlight
+    - Practice demo 3 times, time each run
+    - Prepare answers for likely judge questions
+    - _Requirements: 20.4, 18.4_
+    - _Time estimate: 2 hours_
   
-  - [ ] 21.2 Deploy backend infrastructure with CDK
-    - Deploy all Lambda functions, API Gateway, DynamoDB tables
-    - Configure production CloudWatch alarms
-    - Set up backup for DynamoDB tables
-    - _Requirements: 19.5_
+  - [ ] 19.4 Record demo video (< 5 minutes)
+    - Record screen capture with voiceover narration
+    - Show: problem description → AI generation → visual editing → deployment with AI assistant
+    - Highlight key differentiators: AI + Visual + Executable + Real-time AI guidance
+    - Include before/after cost comparison from cost optimizer
+    - Show real AWS resources created (actual ARNs, console screenshots)
+    - Edit video: add intro slide, transitions, captions
+    - Export in 1080p, test playback
+    - _Requirements: 20.4, 18.4_
+    - _Time estimate: 3 hours_
   
-  - [ ] 21.3 Create demo video (< 3 minutes)
-    - Record walkthrough: login → describe problem → AI generates architecture → edit visually → optimize costs → review security → deploy to AWS
-    - Highlight key differentiators (AI + Visual + Executable)
-    - Include before/after cost comparison
-    - Show real AWS resources created
-    - _Requirements: 20.4_
+  - [ ] 19.5 Prepare demo presentation materials
+    - Create slide deck (8-10 slides max)
+    - Slides: Problem → Solution → Technical Architecture → Demo → AWS Services Used → Impact
+    - Add architecture diagram showing all AWS services integrated
+    - Include metrics: response times, cost estimates, services supported
+    - Prepare 2-minute pitch (problem + solution + differentiators)
+    - Design backup slides for technical questions
+    - _Requirements: 18.4, 20.4_
+    - _Time estimate: 2 hours_
   
-  - [ ] 21.4 Prepare demo presentation
-    - Create slide deck with problem statement, solution, demo, technical architecture
-    - Prepare live demo script with backup recording
-    - Test demo on multiple browsers and devices
+  - [ ] 19.6 Test demo on fresh AWS account (if possible)
+    - Create test AWS account or use clean environment
+    - Deploy backend infrastructure from scratch
+    - Test full user journey: signup → generate → edit → deploy
+    - Verify AI Deployment Assistant works end-to-end
+    - Test error scenarios to ensure graceful handling
+    - Document any setup prerequisites for judges
     - _Requirements: 18.4_
+    - _Time estimate: 1.5 hours_
 
-- [ ] 22. Final checkpoint - Hackathon submission
-  - Verify all core features work end-to-end
-  - Test demo on fresh AWS account
-  - Ensure video upload and submission materials are ready
+- [ ] 20. Final checkpoint - Hackathon submission ready
+  - Verify all core features work end-to-end in production
+  - Confirm demo video uploaded and accessible
+  - Test demo script with timer (stay under 5 minutes)
+  - Ensure presentation materials are polished
+  - Prepare live demo backup plan
+  - Double-check submission requirements met
+  - Get good sleep before demo day! 🎉
   - Ask the user if questions arise before final submission
 
 ## Notes
 
-- **MVP Focus**: Days 1-5 deliver minimum viable product (auth + AI generation + visual editor + CloudFormation + deployment). Days 6-7 add differentiating features.
-- **AI as Differentiator**: AI-powered architecture generation (Req 3), cost optimization (Req 8), security review (Req 9), and repository analysis (Req 11) are the key competitive advantages - prioritize these for demo impact.
-- **Property-Based Testing**: Tasks marked with `*` are optional for faster MVP delivery but recommended for production quality. Property tests (8.3) validate critical serialization logic.
-- **Time Management**: Each day has a checkpoint to assess progress. If behind schedule, deprioritize stretch features (GitHub import, advanced validation) and focus on core demo flow.
-- **Demo Preparation**: Reserve final 8 hours (July 27) exclusively for demo video, presentation, and submission materials - no new code development.
+- **MVP Focus**: Days 1-5 deliver minimum viable product (auth + AI generation + visual editor + CloudFormation + deployment). Days 6-7 add THE KEY DIFFERENTIATOR: AI Deployment Assistant.
+- **🏆 Hackathon Winner Strategy**: The AI Deployment Assistant (Task 16) is the feature that will win. It combines real-time WebSocket communication, Bedrock AI streaming, Step Functions integration, and proactive assistance - demonstrating advanced AWS expertise that judges will notice. No other team will have real-time AI guidance during deployment.
+- **AI as Differentiator**: 
+  - ✅ AI-powered architecture generation (Req 3) - DONE
+  - ✅ AI cost optimization (Req 8) - DONE
+  - ✅ AI security review (Req 9) - DONE
+  - 🏆 **AI deployment assistant (NEW)** - THE WINNER - Shows AI throughout entire lifecycle, not just design phase
+- **Time Management**: Each day has a checkpoint to assess progress. Task 16 (AI Assistant) is the priority for Day 6 (8-10 hours). Day 7 is for polish, production deployment, and demo preparation only - NO new features.
+- **Demo Preparation**: Reserve final 8-10 hours (July 27) exclusively for demo video, presentation, and submission materials - no new code development.
 - **Requirements Traceability**: Each task references specific requirements (e.g., _Requirements: 3.1, 3.2_) for validation coverage.
 - **Incremental Testing**: Test each day's deliverables before moving to next phase to catch integration issues early.
+- **Deferred Features**: Tasks previously numbered 18 (GitHub analyzer), 19 (advanced monitoring), 20 (onboarding tutorial) have been deprioritized or simplified to focus on hackathon-winning features. These can be built post-hackathon.
 
 ## Task Dependency Graph
 
@@ -581,13 +661,23 @@ This implementation plan prioritizes delivering a working demo by July 27, 2026 
     { "id": 19, "tasks": ["14.2", "15.1"] },
     { "id": 20, "tasks": ["14.3", "15.2", "16.1"] },
     { "id": 21, "tasks": ["14.4", "15.3", "16.2"] },
-    { "id": 22, "tasks": ["15.4", "16.3", "18.1"] },
-    { "id": 23, "tasks": ["18.2", "19.1"] },
-    { "id": 24, "tasks": ["18.3", "19.2", "19.3"] },
-    { "id": 25, "tasks": ["18.4", "19.4", "20.1"] },
-    { "id": 26, "tasks": ["20.2", "20.3"] },
-    { "id": 27, "tasks": ["21.1", "21.2"] },
-    { "id": 28, "tasks": ["21.3", "21.4"] }
+    { "id": 22, "tasks": ["15.4", "16.3", "16.4"] },
+    { "id": 23, "tasks": ["16.5", "16.6"] },
+    { "id": 24, "tasks": ["16.7", "16.8"] },
+    { "id": 25, "tasks": ["18.1", "18.2"] },
+    { "id": 26, "tasks": ["18.3", "18.4"] },
+    { "id": 27, "tasks": ["19.1", "19.2"] },
+    { "id": 28, "tasks": ["19.3", "19.4", "19.5"] },
+    { "id": 29, "tasks": ["19.6"] }
   ]
 }
 ```
+
+**Key Dependencies:**
+- **Day 1-5 (Tasks 1-13)**: ✅ COMPLETE - Foundation ready
+- **Day 6 Morning (Tasks 14-15)**: ✅ COMPLETE - Cost + Security optimization ready
+- **Day 6 Afternoon-Evening (Task 16)**: 🏆 CRITICAL - AI Deployment Assistant (8-10 hours)
+  - Depends on: Step Functions deployment (11.x), Deployment monitoring (12.x)
+  - Enables: Winning demo narrative, judge "wow" moment
+- **Day 7 Morning (Task 18)**: Polish pass (4-6 hours)
+- **Day 7 Afternoon-Evening (Task 19)**: Demo materials (8-10 hours)
