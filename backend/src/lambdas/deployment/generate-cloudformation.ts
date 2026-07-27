@@ -142,21 +142,7 @@ function generateTemplate(architecture: Architecture): CloudFormationTemplate {
     Description:
       architecture.metadata.description ||
       `CloudForge AI Generated Architecture: ${architecture.metadata.name}`,
-    Parameters: {
-      ProjectName: {
-        Type: 'String',
-        Description: 'Name of the project (used for resource naming)',
-        Default: uniqueProjectName,
-        AllowedPattern: '^[a-z][a-z0-9-]*$',
-        ConstraintDescription: 'Must start with a lowercase letter and contain only lowercase letters, numbers, and hyphens',
-      },
-      Environment: {
-        Type: 'String',
-        Description: 'Environment name (dev, staging, prod)',
-        Default: 'dev',
-        AllowedValues: ['dev', 'staging', 'prod'],
-      },
-    },
+    Parameters: {}, // Will be populated later
     Resources: {},
     Outputs: {},
   }
@@ -250,8 +236,10 @@ function generateTemplate(architecture: Architecture): CloudFormationTemplate {
     },
     ProjectName: {
       Type: 'String',
-      Description: 'Project name for resource naming (defaults to stack name)',
-      // No default - will be passed as parameter with stack name value
+      Description: 'Project name for resource naming',
+      Default: uniqueProjectName, // Use the generated unique name as default
+      AllowedPattern: '^[a-z][a-z0-9-]*$',
+      ConstraintDescription: 'Must start with a lowercase letter and contain only lowercase letters, numbers, and hyphens',
     },
   }
 
