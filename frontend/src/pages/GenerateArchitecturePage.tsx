@@ -19,6 +19,7 @@ export function GenerateArchitecturePage({
 }: GenerateArchitecturePageProps) {
   const navigate = useNavigate()
   const { architecture: contextArchitecture, setArchitecture: setContextArchitecture } = useArchitecture()
+  const [architectureName, setArchitectureName] = useState('')
   const [description, setDescription] = useState('')
   const [isGenerating, setIsGenerating] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -75,8 +76,14 @@ export function GenerateArchitecturePage({
         accessToken
       )
 
-      setGeneratedArchitecture(response.architecture)
-      setContextArchitecture(response.architecture) // Save to context
+      // Update architecture name if user provided one
+      const architecture = response.architecture
+      if (architectureName.trim()) {
+        architecture.metadata.name = architectureName.trim()
+      }
+
+      setGeneratedArchitecture(architecture)
+      setContextArchitecture(architecture) // Save to context
       setTokenUsage(response.usage)
 
       // Notify parent component if callback provided
@@ -93,6 +100,7 @@ export function GenerateArchitecturePage({
   }
 
   const handleClear = () => {
+    setArchitectureName('')
     setDescription('')
     setError(null)
     setGeneratedArchitecture(null)
@@ -119,7 +127,21 @@ export function GenerateArchitecturePage({
 
       <div className="generation-container">
         <div className="input-section">
-          <label htmlFor="description" className="input-label">
+          <label htmlFor="architectureName" className="input-label">
+            Architecture Name
+          </label>
+          <input
+            id="architectureName"
+            type="text"
+            className="name-input"
+            placeholder="e.g., Todo App Backend, User Management System"
+            value={architectureName}
+            onChange={(e) => setArchitectureName(e.target.value)}
+            disabled={isGenerating}
+            maxLength={100}
+          />
+
+          <label htmlFor="description" className="input-label" style={{ marginTop: '1.5rem' }}>
             Problem Description
             <span className="required">*</span>
           </label>
@@ -153,6 +175,18 @@ export function GenerateArchitecturePage({
                 description.trim().length < MIN_DESCRIPTION_LENGTH ||
                 description.length > MAX_DESCRIPTION_LENGTH
               }
+              style={{
+                height: '48px',
+                padding: '0 1.5rem',
+                border: '1px solid transparent',
+                boxSizing: 'border-box',
+                display: 'inline-flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '0.5rem',
+                lineHeight: '1',
+                margin: '0',
+              }}
             >
               {isGenerating ? (
                 <>
@@ -168,6 +202,18 @@ export function GenerateArchitecturePage({
               className="btn btn-secondary"
               onClick={handleClear}
               disabled={isGenerating}
+              style={{
+                height: '48px',
+                padding: '0 1.5rem',
+                border: '1px solid var(--border)',
+                boxSizing: 'border-box',
+                display: 'inline-flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '0.5rem',
+                lineHeight: '1',
+                margin: '0',
+              }}
             >
               Clear
             </button>
