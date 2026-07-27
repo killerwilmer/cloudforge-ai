@@ -577,46 +577,48 @@ function generateIAMResource(service: any, config: any): any {
  * Generate CloudFront distribution resource
  */
 function generateCloudFrontResource(service: any, config: any): any {
-  return {
-    Type: 'AWS::CloudFront::Distribution',
-    Properties: {
-      DistributionConfig: {
-        Enabled: config.enabled !== false,
-        Comment: service.name || 'CloudForge AI Generated Distribution',
-        DefaultCacheBehavior: {
-          TargetOriginId: config.originId || 'default-origin',
-          ViewerProtocolPolicy: config.viewerProtocolPolicy || 'redirect-to-https',
-          AllowedMethods: config.allowedMethods || ['GET', 'HEAD', 'OPTIONS'],
-          CachedMethods: ['GET', 'HEAD'],
-          ForwardedValues: {
-            QueryString: true,
-            Cookies: { Forward: 'none' },
-          },
-          Compress: config.compress !== false,
-          DefaultTTL: config.defaultTTL || 3600,
-          MaxTTL: config.maxTTL || 86400,
-          MinTTL: config.minTTL || 0,
-        },
-        Origins: config.origins || [
-          {
-            Id: 'default-origin',
-            DomainName: '<<REPLACE_WITH_ORIGIN_DOMAIN>>',
-            CustomOriginConfig: {
-              HTTPPort: 80,
-              HTTPSPort: 443,
-              OriginProtocolPolicy: config.originProtocolPolicy || 'https-only',
+  // If origins are manually configured, use them
+  if (config.origins && Array.isArray(config.origins) && config.origins.length > 0) {
+    return {
+      Type: 'AWS::CloudFront::Distribution',
+      Properties: {
+        DistributionConfig: {
+          Enabled: config.enabled !== false,
+          Comment: service.name || 'CloudForge AI Generated Distribution',
+          DefaultCacheBehavior: {
+            TargetOriginId: config.originId || config.origins[0].Id || 'default-origin',
+            ViewerProtocolPolicy: config.viewerProtocolPolicy || 'redirect-to-https',
+            AllowedMethods: config.allowedMethods || ['GET', 'HEAD', 'OPTIONS'],
+            CachedMethods: ['GET', 'HEAD'],
+            ForwardedValues: {
+              QueryString: true,
+              Cookies: { Forward: 'none' },
             },
+            Compress: config.compress !== false,
+            DefaultTTL: config.defaultTTL || 3600,
+            MaxTTL: config.maxTTL || 86400,
+            MinTTL: config.minTTL || 0,
           },
+          Origins: config.origins,
+          HttpVersion: config.httpVersion || 'http2',
+          PriceClass: config.priceClass || 'PriceClass_100',
+        },
+        Tags: [
+          { Key: 'ManagedBy', Value: 'CloudForgeAI' },
+          { Key: 'ServiceName', Value: service.name },
         ],
-        HttpVersion: config.httpVersion || 'http2',
-        PriceClass: config.priceClass || 'PriceClass_100',
       },
-      Tags: [
-        { Key: 'ManagedBy', Value: 'CloudForgeAI' },
-        { Key: 'ServiceName', Value: service.name },
-      ],
-    },
+    }
   }
+
+  // If no origins configured, skip CloudFront resource
+  // CloudFront requires a valid origin domain and we can't auto-detect it
+  logger.warn('CloudFront distribution skipped - no valid origins configured', {
+    serviceName: service.name,
+    serviceId: service.id,
+  })
+  
+  return null
 }
 
 /**
