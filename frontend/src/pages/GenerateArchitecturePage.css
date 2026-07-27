@@ -115,37 +115,42 @@
   font-style: italic;
 }
 
+/* Actions container with grid layout */
 .actions {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 0.75rem;
   margin-top: 1.5rem;
   width: 100%;
-  grid-auto-rows: 48px; /* Force all rows to be exactly 48px */
+  grid-auto-rows: 48px;
 }
 
 .actions .btn {
   width: 100%;
-  height: 48px; /* Explicit height override */
+  height: 48px !important;
+  padding: 0 1.5rem !important; /* Remove vertical padding, only horizontal */
+  margin: 0 !important;
+  border: 1px solid transparent !important; /* Consistent border on both */
+  box-sizing: border-box !important;
 }
 
 /* Button overrides - must be specific to win cascade */
 .generate-architecture-page .btn {
-  padding: 0.75rem 1.5rem !important; /* Consistent padding */
-  border: none;
+  border: 1px solid transparent !important;
   border-radius: var(--radius);
   font-size: 0.875rem;
   font-weight: 500;
   cursor: pointer;
   transition: all 0.15s ease;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
   gap: 0.5rem;
   white-space: nowrap;
-  height: 48px !important; /* Fixed height - force same height for all buttons */
-  line-height: 1 !important; /* Prevent text from affecting height */
+  height: 48px !important;
+  line-height: 1 !important;
   box-sizing: border-box !important;
+  padding: 0 1.5rem !important;
 }
 
 .generate-architecture-page .btn:disabled {
@@ -156,20 +161,23 @@
 .generate-architecture-page .btn-primary {
   background: var(--primary);
   color: white;
+  border-color: var(--primary) !important;
 }
 
 .generate-architecture-page .btn-primary:hover:not(:disabled) {
   background: var(--primary-hover);
+  border-color: var(--primary-hover) !important;
 }
 
 .generate-architecture-page .btn-secondary {
   background: transparent;
   color: var(--foreground);
-  border: 1px solid var(--border);
+  border: 1px solid var(--border) !important;
 }
 
 .generate-architecture-page .btn-secondary:hover:not(:disabled) {
   background: var(--secondary-hover);
+  border-color: var(--border) !important;
 }
 
 .spinner {
