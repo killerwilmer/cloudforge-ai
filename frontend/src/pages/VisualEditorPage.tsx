@@ -198,7 +198,7 @@ export function VisualEditorPage({ initialArchitecture }: VisualEditorPageProps)
           services,
           connections,
           metadata: {
-            name: 'Untitled Architecture',
+            name: currentDiagramName || 'Untitled Architecture',
             version: 1,
             createdAt: new Date().toISOString(),
             updatedAt: new Date().toISOString(),
@@ -208,7 +208,7 @@ export function VisualEditorPage({ initialArchitecture }: VisualEditorPageProps)
         setContextArchitecture(architecture)
       }
     }
-  }, [nodes, edges, setContextArchitecture])
+  }, [nodes, edges, currentDiagramName, setContextArchitecture])
 
   const loadArchitecture = useCallback((architecture: Architecture) => {
     // Helper function to get config summary for any service
@@ -369,6 +369,11 @@ export function VisualEditorPage({ initialArchitecture }: VisualEditorPageProps)
 
     setNodes(newNodes)
     setEdges(newEdges)
+    
+    // Set the architecture name if available
+    if (architecture.metadata.name) {
+      setCurrentDiagramName(architecture.metadata.name)
+    }
   }, [setNodes, setEdges])
 
   const onConnect = useCallback(
@@ -550,13 +555,13 @@ export function VisualEditorPage({ initialArchitecture }: VisualEditorPageProps)
       services,
       connections,
       metadata: {
-        name: 'Untitled Architecture',
+        name: currentDiagramName || 'Untitled Architecture',
         version: 1,
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
       },
     }
-  }, [nodes, edges])
+  }, [nodes, edges, currentDiagramName])
 
   const handleSaveDiagram = async (name: string, changeDescription?: string) => {
     const architecture = exportArchitecture()
@@ -745,36 +750,177 @@ export function VisualEditorPage({ initialArchitecture }: VisualEditorPageProps)
 
         {/* Toolbar */}
         <div className="editor-toolbar">
-          <button className="btn-secondary" onClick={handleAutoLayout} title="Auto-arrange nodes (Ctrl/Cmd + L)">
+          <button 
+            onClick={handleAutoLayout} 
+            title="Auto-arrange nodes (Ctrl/Cmd + L)"
+            style={{
+              height: '48px',
+              minHeight: '48px',
+              maxHeight: '48px',
+              padding: '0 20px',
+              border: '1px solid #444',
+              borderRadius: '6px',
+              boxSizing: 'border-box',
+              display: 'inline-flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: '0.5rem',
+              lineHeight: '1',
+              margin: '0',
+              background: '#2a2a2a',
+              color: 'white',
+              fontSize: '14px',
+              fontWeight: '600',
+              cursor: 'pointer',
+              transition: 'all 0.2s',
+              whiteSpace: 'nowrap',
+            }}
+          >
             <span className="icon">⚡</span> Auto-Layout
           </button>
-          <button className="btn-secondary" onClick={() => setShowLoadDialog(true)} title="Load saved diagram">
+          <button 
+            onClick={() => setShowLoadDialog(true)} 
+            title="Load saved diagram"
+            style={{
+              height: '48px',
+              minHeight: '48px',
+              maxHeight: '48px',
+              padding: '0 20px',
+              border: '1px solid #444',
+              borderRadius: '6px',
+              boxSizing: 'border-box',
+              display: 'inline-flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: '0.5rem',
+              lineHeight: '1',
+              margin: '0',
+              background: '#2a2a2a',
+              color: 'white',
+              fontSize: '14px',
+              fontWeight: '600',
+              cursor: 'pointer',
+              transition: 'all 0.2s',
+              whiteSpace: 'nowrap',
+            }}
+          >
             <span className="icon">📂</span> Load
           </button>
-          <button className="btn-primary" onClick={() => setShowSaveDialog(true)} title="Save diagram to cloud">
+          <button 
+            onClick={() => setShowSaveDialog(true)} 
+            title="Save diagram to cloud"
+            style={{
+              height: '48px',
+              minHeight: '48px',
+              maxHeight: '48px',
+              padding: '0 20px',
+              border: 'none',
+              borderRadius: '6px',
+              boxSizing: 'border-box',
+              display: 'inline-flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: '0.5rem',
+              lineHeight: '1',
+              margin: '0',
+              background: '#0969da',
+              color: 'white',
+              fontSize: '14px',
+              fontWeight: '600',
+              cursor: 'pointer',
+              transition: 'all 0.2s',
+              whiteSpace: 'nowrap',
+            }}
+          >
             <span className="icon">💾</span> Save
           </button>
           <button 
-            className="btn-secondary" 
             onClick={() => setShowCloudFormationPreview(true)} 
             title="Generate and view CloudFormation template"
             disabled={nodes.length === 0}
+            style={{
+              height: '48px',
+              minHeight: '48px',
+              maxHeight: '48px',
+              padding: '0 20px',
+              border: '1px solid #444',
+              borderRadius: '6px',
+              boxSizing: 'border-box',
+              display: 'inline-flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: '0.5rem',
+              lineHeight: '1',
+              margin: '0',
+              background: '#2a2a2a',
+              color: 'white',
+              fontSize: '14px',
+              fontWeight: '600',
+              cursor: nodes.length === 0 ? 'not-allowed' : 'pointer',
+              opacity: nodes.length === 0 ? 0.5 : 1,
+              transition: 'all 0.2s',
+              whiteSpace: 'nowrap',
+            }}
           >
             <span className="icon">☁️</span> CloudFormation
           </button>
           <button 
-            className="btn-secondary" 
             onClick={() => setShowCostOptimization(true)} 
             title="Estimate costs and get AI-powered optimization recommendations"
             disabled={nodes.length === 0}
+            style={{
+              height: '48px',
+              minHeight: '48px',
+              maxHeight: '48px',
+              padding: '0 20px',
+              border: '1px solid #444',
+              borderRadius: '6px',
+              boxSizing: 'border-box',
+              display: 'inline-flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: '0.5rem',
+              lineHeight: '1',
+              margin: '0',
+              background: '#2a2a2a',
+              color: 'white',
+              fontSize: '14px',
+              fontWeight: '600',
+              cursor: nodes.length === 0 ? 'not-allowed' : 'pointer',
+              opacity: nodes.length === 0 ? 0.5 : 1,
+              transition: 'all 0.2s',
+              whiteSpace: 'nowrap',
+            }}
           >
             <span className="icon">💰</span> Optimize Costs
           </button>
           <button 
-            className="btn-secondary" 
             onClick={() => setShowSecurityAnalysis(true)} 
             title="Analyze security vulnerabilities and get remediation recommendations"
             disabled={nodes.length === 0}
+            style={{
+              height: '48px',
+              minHeight: '48px',
+              maxHeight: '48px',
+              padding: '0 20px',
+              border: '1px solid #444',
+              borderRadius: '6px',
+              boxSizing: 'border-box',
+              display: 'inline-flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: '0.5rem',
+              lineHeight: '1',
+              margin: '0',
+              background: '#2a2a2a',
+              color: 'white',
+              fontSize: '14px',
+              fontWeight: '600',
+              cursor: nodes.length === 0 ? 'not-allowed' : 'pointer',
+              opacity: nodes.length === 0 ? 0.5 : 1,
+              transition: 'all 0.2s',
+              whiteSpace: 'nowrap',
+            }}
           >
             <span className="icon">🛡️</span> Security Review
           </button>

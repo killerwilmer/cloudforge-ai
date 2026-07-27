@@ -168,7 +168,6 @@ export function GenerateArchitecturePage({
           <div className="actions">
             <button
               type="button"
-              className="btn btn-primary"
               onClick={handleGenerate}
               disabled={
                 isGenerating ||
@@ -177,8 +176,11 @@ export function GenerateArchitecturePage({
               }
               style={{
                 height: '48px',
+                minHeight: '48px',
+                maxHeight: '48px',
                 padding: '0 1.5rem',
-                border: '1px solid transparent',
+                border: '1px solid #3b82f6',
+                borderRadius: '6px',
                 boxSizing: 'border-box',
                 display: 'inline-flex',
                 alignItems: 'center',
@@ -186,6 +188,14 @@ export function GenerateArchitecturePage({
                 gap: '0.5rem',
                 lineHeight: '1',
                 margin: '0',
+                background: '#3b82f6',
+                color: 'white',
+                fontSize: '0.875rem',
+                fontWeight: '500',
+                cursor: isGenerating || description.trim().length < MIN_DESCRIPTION_LENGTH || description.length > MAX_DESCRIPTION_LENGTH ? 'not-allowed' : 'pointer',
+                opacity: isGenerating || description.trim().length < MIN_DESCRIPTION_LENGTH || description.length > MAX_DESCRIPTION_LENGTH ? 0.5 : 1,
+                transition: 'all 0.15s ease',
+                whiteSpace: 'nowrap',
               }}
             >
               {isGenerating ? (
@@ -199,13 +209,15 @@ export function GenerateArchitecturePage({
             </button>
             <button
               type="button"
-              className="btn btn-secondary"
               onClick={handleClear}
               disabled={isGenerating}
               style={{
                 height: '48px',
+                minHeight: '48px',
+                maxHeight: '48px',
                 padding: '0 1.5rem',
-                border: '1px solid var(--border)',
+                border: '1px solid #e5e7eb',
+                borderRadius: '6px',
                 boxSizing: 'border-box',
                 display: 'inline-flex',
                 alignItems: 'center',
@@ -213,6 +225,14 @@ export function GenerateArchitecturePage({
                 gap: '0.5rem',
                 lineHeight: '1',
                 margin: '0',
+                background: 'transparent',
+                color: 'var(--foreground)',
+                fontSize: '0.875rem',
+                fontWeight: '500',
+                cursor: isGenerating ? 'not-allowed' : 'pointer',
+                opacity: isGenerating ? 0.5 : 1,
+                transition: 'all 0.15s ease',
+                whiteSpace: 'nowrap',
               }}
             >
               Clear
@@ -304,13 +324,60 @@ export function GenerateArchitecturePage({
 
                 <div className="next-actions">
                   <button 
-                    type="button" 
-                    className="btn btn-primary"
+                    type="button"
                     onClick={() => navigate('/editor', { state: { architecture: generatedArchitecture } })}
+                    style={{
+                      height: '48px',
+                      minHeight: '48px',
+                      maxHeight: '48px',
+                      padding: '0 1.5rem',
+                      border: '1px solid #3b82f6',
+                      borderRadius: '6px',
+                      boxSizing: 'border-box',
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: '0.5rem',
+                      lineHeight: '1',
+                      margin: '0',
+                      background: '#3b82f6',
+                      color: 'white',
+                      fontSize: '0.875rem',
+                      fontWeight: '500',
+                      cursor: 'pointer',
+                      transition: 'all 0.15s ease',
+                      whiteSpace: 'nowrap',
+                      flex: '1',
+                    }}
                   >
                     Open in Visual Editor
                   </button>
-                  <button type="button" className="btn btn-secondary">
+                  <button 
+                    type="button"
+                    style={{
+                      height: '48px',
+                      minHeight: '48px',
+                      maxHeight: '48px',
+                      padding: '0 1.5rem',
+                      border: '1px solid #e5e7eb',
+                      borderRadius: '6px',
+                      boxSizing: 'border-box',
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: '0.5rem',
+                      lineHeight: '1',
+                      margin: '0',
+                      background: 'transparent',
+                      color: 'var(--foreground)',
+                      fontSize: '0.875rem',
+                      fontWeight: '500',
+                      cursor: 'pointer',
+                      transition: 'all 0.15s ease',
+                      whiteSpace: 'nowrap',
+                      flex: '1',
+                    }}
+                  >
                     Generate CloudFormation
                   </button>
                 </div>

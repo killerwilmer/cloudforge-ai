@@ -99,6 +99,11 @@ export function CloudFormationPreview({ architecture, onClose }: CloudFormationP
       ? `${sanitizedName}-${Date.now()}`
       : `stack-${sanitizedName}-${Date.now()}`
     
+    // Use sanitized architecture name for ProjectName (without timestamp)
+    const projectName = sanitizedName.match(/^[a-z]/)
+      ? sanitizedName
+      : `project-${sanitizedName}`
+    
     setDeploying(true)
     setError(null)
 
@@ -110,7 +115,7 @@ export function CloudFormationPreview({ architecture, onClose }: CloudFormationP
         parameters: [
           {
             ParameterKey: 'ProjectName',
-            ParameterValue: stackName, // Use stack name as project name for uniqueness
+            ParameterValue: projectName, // Use clean architecture name (no timestamp)
           },
         ],
       })
