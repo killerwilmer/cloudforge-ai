@@ -2,6 +2,7 @@ import { LoginForm } from '@/components/auth/LoginForm'
 import { SignUpForm } from '@/components/auth/SignUpForm'
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+import './AuthPage.css'
 
 export function AuthPage() {
   const navigate = useNavigate()
