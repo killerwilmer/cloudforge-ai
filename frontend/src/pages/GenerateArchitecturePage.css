@@ -129,8 +129,9 @@
   height: 48px; /* Explicit height override */
 }
 
-.btn {
-  padding: 0.75rem 1.5rem; /* Consistent padding */
+/* Button overrides - must be specific to win cascade */
+.generate-architecture-page .btn {
+  padding: 0.75rem 1.5rem !important; /* Consistent padding */
   border: none;
   border-radius: var(--radius);
   font-size: 0.875rem;
@@ -142,31 +143,32 @@
   justify-content: center;
   gap: 0.5rem;
   white-space: nowrap;
-  height: 48px; /* Fixed height - force same height for all buttons */
-  line-height: 1; /* Prevent text from affecting height */
+  height: 48px !important; /* Fixed height - force same height for all buttons */
+  line-height: 1 !important; /* Prevent text from affecting height */
+  box-sizing: border-box !important;
 }
 
-.btn:disabled {
+.generate-architecture-page .btn:disabled {
   opacity: 0.5;
   cursor: not-allowed;
 }
 
-.btn-primary {
+.generate-architecture-page .btn-primary {
   background: var(--primary);
   color: white;
 }
 
-.btn-primary:hover:not(:disabled) {
+.generate-architecture-page .btn-primary:hover:not(:disabled) {
   background: var(--primary-hover);
 }
 
-.btn-secondary {
+.generate-architecture-page .btn-secondary {
   background: transparent;
   color: var(--foreground);
   border: 1px solid var(--border);
 }
 
-.btn-secondary:hover:not(:disabled) {
+.generate-architecture-page .btn-secondary:hover:not(:disabled) {
   background: var(--secondary-hover);
 }
 
