@@ -120,6 +120,12 @@
   gap: 0.75rem;
   margin-top: 1.5rem;
   align-items: stretch; /* Ensure buttons have same height */
+  width: 100%; /* Ensure container takes full width */
+}
+
+.actions .btn {
+  flex: 1 1 0%; /* Force equal distribution */
+  min-width: 0; /* Allow flex to shrink below content size */
 }
 
 .btn {
@@ -146,7 +152,6 @@
 .btn-primary {
   background: var(--primary);
   color: white;
-  flex: 1; /* Equal width */
 }
 
 .btn-primary:hover:not(:disabled) {
@@ -157,7 +162,6 @@
   background: transparent;
   color: var(--foreground);
   border: 1px solid var(--border);
-  flex: 1; /* Equal width - same as primary */
 }
 
 .btn-secondary:hover:not(:disabled) {
