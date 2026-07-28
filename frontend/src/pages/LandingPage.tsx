@@ -1,5 +1,5 @@
-import { useNavigate } from 'react-router-dom'
 import { useAuth } from '@/contexts/AuthContext'
+import { useNavigate } from 'react-router-dom'
 import './LandingPage.css'
 
 export function LandingPage() {
@@ -183,7 +183,7 @@ export function LandingPage() {
           <div className="footer-links">
             <a href="#features">Features</a>
             <a href="#how-it-works">How It Works</a>
-            <a href="https://github.com" target="_blank" rel="noopener">
+            <a href="https://github.com/killerwilmer" target="_blank" rel="noopener">
               GitHub
             </a>
           </div>
