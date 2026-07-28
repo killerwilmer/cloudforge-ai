@@ -20,7 +20,7 @@ export function AuthPage() {
     <div className="auth-page">
       <div className="auth-container">
         <div className="auth-logo">
-          <h1>☁️ CloudForge AI</h1>
+          <h1 onClick={() => navigate('/')} style={{ cursor: 'pointer' }}>☁️ CloudForge AI</h1>
         </div>
 
         {mode === 'login' ? (
