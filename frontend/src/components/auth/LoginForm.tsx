@@ -66,8 +66,8 @@ export function LoginForm({ onSuccess, onSwitchToSignUp }: LoginFormProps) {
 
       <form onSubmit={handleSubmit}>
         {error && (
-          <div className="error-message" role="alert">
-            {error}
+          <div className="error-message" role="alert" aria-live="assertive">
+            <span className="error-content">{error}</span>
           </div>
         )}
 
