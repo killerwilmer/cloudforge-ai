@@ -188,7 +188,7 @@ export function LandingPage() {
             </a>
           </div>
           <div className="footer-credits">
-            <p>Powered by Amazon Bedrock & AWS CDK</p>
+            <p>Powered by Codigofacilito, Amazon Bedrock & AWS CDK</p>
           </div>
         </div>
       </footer>
