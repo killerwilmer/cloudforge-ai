@@ -33,7 +33,9 @@ export function Navbar() {
       <nav className="navbar">
         <div className="navbar-container">
           <div className="navbar-brand">
-            <h1>CloudForge AI</h1>
+            <h1 onClick={() => navigate('/')} style={{ cursor: 'pointer' }}>
+              CloudForge AI
+            </h1>
           </div>
 
           <div className="navbar-menu">
