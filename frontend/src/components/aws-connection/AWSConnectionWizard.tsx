@@ -3,6 +3,57 @@ import { TokenStorage } from '@/utils/token-storage';
 import { useState } from 'react';
 import './AWSConnectionWizard.css';
 
+const IAM_POLICY = {
+  Version: '2012-10-17',
+  Statement: [
+    {
+      Effect: 'Allow',
+      NotAction: ['iam:*', 'organizations:*', 'account:*'],
+      Resource: '*',
+    },
+    {
+      Effect: 'Allow',
+      Action: [
+        'account:GetAccountInformation',
+        'account:GetGovCloudAccountInformation',
+        'account:GetPrimaryEmail',
+        'account:ListRegions',
+        'iam:CreateServiceLinkedRole',
+        'iam:DeleteServiceLinkedRole',
+        'iam:ListRoles',
+        'organizations:DescribeEffectivePolicy',
+        'organizations:DescribeOrganization',
+      ],
+      Resource: '*',
+    },
+    {
+      Sid: 'AllowIAMForCloudFormation',
+      Effect: 'Allow',
+      Action: [
+        'iam:CreateRole',
+        'iam:GetRole',
+        'iam:DeleteRole',
+        'iam:PutRolePolicy',
+        'iam:DeleteRolePolicy',
+        'iam:GetRolePolicy',
+        'iam:AttachRolePolicy',
+        'iam:DetachRolePolicy',
+        'iam:ListAttachedRolePolicies',
+        'iam:ListRolePolicies',
+        'iam:PassRole',
+        'iam:TagRole',
+        'iam:UntagRole',
+      ],
+      Resource: '*',
+      Condition: {
+        StringEquals: {
+          'aws:RequestedRegion': ['us-east-1', 'us-west-2'],
+        },
+      },
+    },
+  ],
+};
+
 interface AWSConnectionWizardProps {
   onClose: () => void;
   onConnected: (connection: AWSConnection) => void;
@@ -108,18 +159,29 @@ export function AWSConnectionWizard({ onClose, onConnected }: AWSConnectionWizar
 
               <div className="instructions-section">
                 <h5>Step 2: Attach Permissions</h5>
-                <p>Attach the following AWS managed policy (or create a custom policy with similar permissions):</p>
-                <ul>
-                  <li>
-                    <code>PowerUserAccess</code> (recommended for full CloudFormation deployment)
-                  </li>
-                  <li>
-                    Or <code>CloudFormationFullAccess</code> + service-specific permissions
-                  </li>
-                </ul>
+                <p>Create a custom IAM policy with the following JSON and attach it to the role:</p>
+                
+                <div className="policy-container">
+                  <div className="policy-header">
+                    <span className="policy-title">CloudForge IAM Policy</span>
+                    <button
+                      className="btn-copy-policy"
+                      onClick={() => copyToClipboard(JSON.stringify(IAM_POLICY, null, 2))}
+                      title="Copy policy to clipboard"
+                    >
+                      📋 Copy Policy
+                    </button>
+                  </div>
+                  <textarea
+                    className="policy-textarea"
+                    value={JSON.stringify(IAM_POLICY, null, 2)}
+                    readOnly
+                    rows={15}
+                  />
+                </div>
+
                 <p className="warning-text">
-                  ⚠️ <strong>Important:</strong> CloudForge will only use these credentials to deploy CloudFormation
-                  stacks. Review the permissions before granting access.
+                  ⚠️ <strong>Important:</strong> This policy grants permissions for CloudFormation deployments. Review before granting access.
                 </p>
               </div>
 
