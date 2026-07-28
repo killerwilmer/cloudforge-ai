@@ -476,21 +476,19 @@ button:disabled .spinner {
 /* Professional Error Message Styling */
 .login-form .error-message,
 .signup-form .error-message {
-  padding: 1rem 1.25rem;
-  margin-bottom: 1.5rem;
-  background: rgba(220, 38, 38, 0.15);
-  border: 1px solid rgba(220, 38, 38, 0.4);
-  border-left: 4px solid #dc2626;
-  border-radius: 8px;
-  font-size: 0.875rem;
+  padding: 0.75rem 1rem;
+  margin-bottom: 1rem;
+  background: rgba(220, 38, 38, 0.1);
+  border: 1px solid rgba(220, 38, 38, 0.3);
+  border-left: 3px solid #dc2626;
+  border-radius: 6px;
+  font-size: 0.8125rem;
   font-weight: 500;
-  line-height: 1.5;
+  line-height: 1.4;
   display: flex;
-  align-items: flex-start;
-  gap: 0.75rem;
+  align-items: center;
+  gap: 0.625rem;
   animation: slideDown 0.3s ease-out;
-  backdrop-filter: blur(10px);
-  box-shadow: 0 4px 12px rgba(220, 38, 38, 0.1);
 }
 
 .login-form .error-message,
@@ -506,7 +504,7 @@ button:disabled .spinner {
 .login-form .error-message::before,
 .signup-form .error-message::before {
   content: '⚠';
-  font-size: 1.25rem;
+  font-size: 1rem;
   flex-shrink: 0;
   line-height: 1;
   color: #dc2626;
