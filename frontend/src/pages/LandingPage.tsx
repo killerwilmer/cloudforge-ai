@@ -188,7 +188,6 @@ export function LandingPage() {
             </a>
           </div>
           <div className="footer-credits">
-            <p>AWS Hackathon 2026 Project</p>
             <p>Powered by Amazon Bedrock & AWS CDK</p>
           </div>
         </div>
