@@ -169,28 +169,43 @@
 
 .modal-actions {
   display: flex;
+  align-items: center;
   gap: 0.75rem;
   justify-content: flex-end;
 }
 
 .btn-cancel,
 .btn-confirm {
-  padding: 0.5rem 1rem;
-  font-size: 0.875rem;
+  flex: 1;
+  min-width: 120px;
+  height: 48px;
+  min-height: 48px;
+  max-height: 48px;
+  padding: 0;
+  margin: 0;
+  font-size: 0.9375rem;
   font-weight: 500;
-  border-radius: var(--radius);
+  line-height: 48px;
+  border-radius: 8px;
   cursor: pointer;
   transition: all 0.15s ease;
-  border: 1px solid var(--border);
+  border: 1px solid;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  white-space: nowrap;
+  box-sizing: border-box;
 }
 
 .btn-cancel {
   color: var(--foreground);
   background: transparent;
+  border-color: var(--border);
 }
 
 .btn-cancel:hover:not(:disabled) {
   background: var(--secondary-hover);
+  border-color: var(--muted-foreground);
 }
 
 .btn-confirm {

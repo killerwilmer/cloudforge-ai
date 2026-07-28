@@ -72,6 +72,16 @@ export class CloudForgeAIStack extends cdk.Stack {
       projectionType: dynamodb.ProjectionType.ALL,
     })
 
+    // Rate limiting table for Bedrock API calls
+    const rateLimitTable = new dynamodb.Table(this, 'RateLimitTable', {
+      tableName: 'CloudForgeAI-RateLimits',
+      partitionKey: { name: 'userId', type: dynamodb.AttributeType.STRING },
+      billingMode: dynamodb.BillingMode.PAY_PER_REQUEST,
+      encryption: dynamodb.TableEncryption.AWS_MANAGED,
+      removalPolicy: cdk.RemovalPolicy.DESTROY,
+      timeToLiveAttribute: 'expiresAt', // Auto-cleanup old records
+    })
+
     // ========================================
     // S3 Buckets
     // ========================================
@@ -323,6 +333,7 @@ export class CloudForgeAIStack extends cdk.Stack {
       BEDROCK_MODEL_ID: process.env.BEDROCK_MODEL_ID || 'us.anthropic.claude-haiku-4-5-20251001-v1:0',
       BEDROCK_REGION: process.env.BEDROCK_REGION || 'us-east-1',
       DYNAMODB_USERS_TABLE: usersTable.tableName,
+      RATE_LIMIT_TABLE: rateLimitTable.tableName,
       LOG_LEVEL: 'INFO',
     }
 
@@ -362,6 +373,9 @@ export class CloudForgeAIStack extends cdk.Stack {
         resources: ['*'],
       })
     )
+
+    // Grant DynamoDB permissions for rate limiting
+    rateLimitTable.grantReadWriteData(generateArchitectureLambda)
 
     // ========================================
     // Diagram Management Lambda Functions
@@ -784,6 +798,9 @@ export class CloudForgeAIStack extends cdk.Stack {
 
     // Environment variables for cost optimization Lambdas
     const costEnv = {
+      BEDROCK_MODEL_ID: process.env.BEDROCK_MODEL_ID || 'us.anthropic.claude-haiku-4-5-20251001-v1:0',
+      BEDROCK_REGION: process.env.BEDROCK_REGION || 'us-east-1',
+      RATE_LIMIT_TABLE: rateLimitTable.tableName,
       LOG_LEVEL: 'INFO',
     }
 
@@ -828,6 +845,9 @@ export class CloudForgeAIStack extends cdk.Stack {
         ],
       })
     )
+
+    // Grant DynamoDB permissions for rate limiting
+    rateLimitTable.grantReadWriteData(optimizeCostLambda)
 
     // Cost optimization API routes
     // POST /api/architectures/estimate-cost - Estimate architecture cost

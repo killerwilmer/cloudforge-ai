@@ -300,7 +300,6 @@ export function CostOptimizationPanel({
               {optimizationResult.recommendations.length > 0 ? (
                 <>
                   <div className="recommendations-list">
-                    <h3>💰 Optimization Recommendations</h3>
                     {optimizationResult.recommendations.map((rec, idx) => (
                       <div key={idx} className="recommendation-card">
                         <div className="rec-header">

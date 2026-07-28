@@ -72,14 +72,44 @@ export function Navbar() {
             <p>Are you sure you want to sign out?</p>
             <div className="modal-actions">
               <button
-                className="btn-cancel"
+                style={{
+                  flex: '1',
+                  height: '48px',
+                  minHeight: '48px',
+                  maxHeight: '48px',
+                  padding: '0 1.5rem',
+                  fontSize: '0.9375rem',
+                  fontWeight: '500',
+                  borderRadius: '8px',
+                  cursor: isLoggingOut ? 'not-allowed' : 'pointer',
+                  transition: 'all 0.15s ease',
+                  border: '1px solid var(--border)',
+                  color: 'var(--foreground)',
+                  background: 'transparent',
+                  opacity: isLoggingOut ? '0.5' : '1',
+                }}
                 onClick={() => setShowConfirm(false)}
                 disabled={isLoggingOut}
               >
                 Cancel
               </button>
               <button
-                className="btn-confirm"
+                style={{
+                  flex: '1',
+                  height: '48px',
+                  minHeight: '48px',
+                  maxHeight: '48px',
+                  padding: '0 1.5rem',
+                  fontSize: '0.9375rem',
+                  fontWeight: '500',
+                  borderRadius: '8px',
+                  cursor: isLoggingOut ? 'not-allowed' : 'pointer',
+                  transition: 'all 0.15s ease',
+                  border: '1px solid var(--destructive)',
+                  color: 'white',
+                  background: 'var(--destructive)',
+                  opacity: isLoggingOut ? '0.5' : '1',
+                }}
                 onClick={handleLogout}
                 disabled={isLoggingOut}
               >

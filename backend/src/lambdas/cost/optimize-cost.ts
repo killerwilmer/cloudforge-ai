@@ -269,6 +269,45 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
   console.log('Cost optimization request:', JSON.stringify(event, null, 2));
   
   try {
+    // Get user ID from Cognito authorizer
+    const userId = event.requestContext.authorizer?.claims?.sub
+    if (!userId) {
+      console.error('User ID not found in request context')
+      return {
+        statusCode: 401,
+        headers: {
+          'Content-Type': 'application/json',
+          'Access-Control-Allow-Origin': '*',
+        },
+        body: JSON.stringify({ error: 'Unauthorized' }),
+      }
+    }
+
+    // Check rate limit (20 Bedrock calls per day per user)
+    const rateLimit = await checkBedrockRateLimit(userId)
+    console.log('Rate limit check:', {
+      userId,
+      allowed: rateLimit.allowed,
+      remaining: rateLimit.remaining,
+      limit: rateLimit.limit,
+    })
+
+    if (!rateLimit.allowed) {
+      return {
+        statusCode: 429,
+        headers: {
+          'Content-Type': 'application/json',
+          'Access-Control-Allow-Origin': '*',
+          'X-RateLimit-Limit': rateLimit.limit.toString(),
+          'X-RateLimit-Remaining': '0',
+          'X-RateLimit-Reset': Math.floor(rateLimit.resetAt.getTime() / 1000).toString(),
+        },
+        body: JSON.stringify({
+          error: `Rate limit exceeded. You have used all ${rateLimit.limit} AI requests for today. Limit resets at ${rateLimit.resetAt.toISOString()}`,
+        }),
+      }
+    }
+
     // Parse request body
     if (!event.body) {
       return {

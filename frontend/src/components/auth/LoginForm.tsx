@@ -65,12 +65,6 @@ export function LoginForm({ onSuccess, onSwitchToSignUp }: LoginFormProps) {
       <p>Design and deploy AWS infrastructure with AI assistance</p>
 
       <form onSubmit={handleSubmit}>
-        {error && (
-          <div className="error-message" role="alert" aria-live="assertive">
-            <span className="error-content">{error}</span>
-          </div>
-        )}
-
         <div className="form-group">
           <label htmlFor="email">Email</label>
           <input
@@ -98,6 +92,12 @@ export function LoginForm({ onSuccess, onSwitchToSignUp }: LoginFormProps) {
             autoComplete="current-password"
           />
         </div>
+
+        {error && (
+          <div className="error-message" role="alert" aria-live="assertive">
+            <span className="error-content">{error}</span>
+          </div>
+        )}
 
         <button type="submit" disabled={isLoading} className="btn-primary">
           {isLoading ? 'Signing in...' : 'Sign In'}

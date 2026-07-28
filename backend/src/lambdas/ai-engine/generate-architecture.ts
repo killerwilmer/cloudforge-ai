@@ -132,6 +132,34 @@ export async function handler(
   try {
     logger.info('Architecture generation request received')
 
+    // Get user ID from Cognito authorizer
+    const userId = event.requestContext.authorizer?.claims?.sub
+    if (!userId) {
+      logger.error('User ID not found in request context')
+      return errorResponse(401, 'Unauthorized')
+    }
+
+    // Check rate limit (20 Bedrock calls per day per user)
+    const rateLimit = await checkBedrockRateLimit(userId)
+    logger.info('Rate limit check', {
+      userId,
+      allowed: rateLimit.allowed,
+      remaining: rateLimit.remaining,
+      limit: rateLimit.limit,
+    })
+
+    if (!rateLimit.allowed) {
+      return errorResponse(
+        429,
+        `Rate limit exceeded. You have used all ${rateLimit.limit} AI generation requests for today. Limit resets at ${rateLimit.resetAt.toISOString()}`,
+        {
+          'X-RateLimit-Limit': rateLimit.limit.toString(),
+          'X-RateLimit-Remaining': '0',
+          'X-RateLimit-Reset': Math.floor(rateLimit.resetAt.getTime() / 1000).toString(),
+        }
+      )
+    }
+
     // Parse and validate request body
     const body = JSON.parse(event.body || '{}') as GenerateArchitectureRequest
 
@@ -289,8 +317,20 @@ export async function handler(
       architectureName: architecture.metadata.name,
     })
 
-    return successResponse({
-      architecture,
+    // Increment rate limit counter after successful generation
+    await incrementBedrockUsage(userId)
+
+    // Return response with rate limit headers
+    return successResponse(
+      {
+        architecture,
+      },
+      {
+        'X-RateLimit-Limit': rateLimit.limit.toString(),
+        'X-RateLimit-Remaining': (rateLimit.remaining - 1).toString(),
+        'X-RateLimit-Reset': Math.floor(rateLimit.resetAt.getTime() / 1000).toString(),
+      }
+    )
       usage: {
         inputTokens: response.usage?.inputTokens || 0,
         outputTokens: response.usage?.outputTokens || 0,

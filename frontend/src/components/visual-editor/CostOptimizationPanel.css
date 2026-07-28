@@ -242,7 +242,7 @@
 
 /* Optimization Summary */
 .optimization-summary {
-  margin-bottom: 2rem;
+  margin-bottom: 1.25rem;
 }
 
 .savings-card {
@@ -328,7 +328,9 @@
   font-size: 1.125rem;
   font-weight: 600;
   color: var(--foreground);
-  margin: 0 0 1rem 0;
+  margin: 0 0 0.5rem 0;
+  text-align: left;
+  padding: 0;
 }
 
 .recommendation-card {
@@ -338,7 +340,12 @@
   border-radius: var(--radius);
   padding: 1.25rem;
   margin-bottom: 1rem;
+  margin-top: 0;
   transition: all 0.2s;
+}
+
+.recommendation-card:first-of-type {
+  margin-top: 0;
 }
 
 .recommendation-card:hover {
