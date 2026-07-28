@@ -1,5 +1,6 @@
 import * as cdk from 'aws-cdk-lib'
 import * as apigateway from 'aws-cdk-lib/aws-apigateway'
+import * as cloudfront from 'aws-cdk-lib/aws-cloudfront'
 import * as cognito from 'aws-cdk-lib/aws-cognito'
 import * as dynamodb from 'aws-cdk-lib/aws-dynamodb'
 import * as iam from 'aws-cdk-lib/aws-iam'
@@ -1458,6 +1459,94 @@ export class CloudForgeAIStack extends cdk.Stack {
       value: stateMachine.stateMachineArn,
       description: 'Step Functions state machine ARN for deployment pipeline',
       exportName: 'CloudForgeDeploymentStateMachine',
+    })
+
+    // ========================================
+    // Frontend Hosting - S3 + CloudFront
+    // ========================================
+
+    // S3 bucket for frontend hosting
+    const frontendBucket = new s3.Bucket(this, 'FrontendBucket', {
+      bucketName: `cloudforge-frontend-${this.account}`,
+      websiteIndexDocument: 'index.html',
+      websiteErrorDocument: 'index.html', // SPA routing
+      publicReadAccess: false, // CloudFront will access via OAI
+      blockPublicAccess: s3.BlockPublicAccess.BLOCK_ALL,
+      encryption: s3.BucketEncryption.S3_MANAGED,
+      removalPolicy: cdk.RemovalPolicy.DESTROY,
+      autoDeleteObjects: true, // Cleanup on stack deletion
+    })
+
+    // CloudFront Origin Access Identity
+    const cloudFrontOAI = new cloudfront.OriginAccessIdentity(
+      this,
+      'CloudFrontOAI',
+      {
+        comment: 'OAI for CloudForge Frontend',
+      }
+    )
+
+    // Grant CloudFront access to S3 bucket
+    frontendBucket.grantRead(cloudFrontOAI)
+
+    // CloudFront distribution
+    const distribution = new cloudfront.CloudFrontWebDistribution(
+      this,
+      'FrontendDistribution',
+      {
+        originConfigs: [
+          {
+            s3OriginSource: {
+              s3BucketSource: frontendBucket,
+              originAccessIdentity: cloudFrontOAI,
+            },
+            behaviors: [
+              {
+                isDefaultBehavior: true,
+                compress: true,
+                allowedMethods:
+                  cloudfront.CloudFrontAllowedMethods.GET_HEAD_OPTIONS,
+                viewerProtocolPolicy:
+                  cloudfront.ViewerProtocolPolicy.REDIRECT_TO_HTTPS,
+              },
+            ],
+          },
+        ],
+        errorConfigurations: [
+          {
+            errorCode: 404,
+            responseCode: 200,
+            responsePagePath: '/index.html', // SPA routing
+            errorCachingMinTtl: 0,
+          },
+          {
+            errorCode: 403,
+            responseCode: 200,
+            responsePagePath: '/index.html', // SPA routing
+            errorCachingMinTtl: 0,
+          },
+        ],
+        priceClass: cloudfront.PriceClass.PRICE_CLASS_100, // North America & Europe
+      }
+    )
+
+    // Output frontend URLs
+    new cdk.CfnOutput(this, 'FrontendBucketName', {
+      value: frontendBucket.bucketName,
+      description: 'S3 bucket for frontend',
+      exportName: 'CloudForgeFrontendBucket',
+    })
+
+    new cdk.CfnOutput(this, 'FrontendURL', {
+      value: `https://${distribution.distributionDomainName}`,
+      description: 'CloudFront distribution URL for frontend',
+      exportName: 'CloudForgeFrontendURL',
+    })
+
+    new cdk.CfnOutput(this, 'CloudFrontDistributionId', {
+      value: distribution.distributionId,
+      description: 'CloudFront distribution ID',
+      exportName: 'CloudForgeDistributionId',
     })
   }
 }
