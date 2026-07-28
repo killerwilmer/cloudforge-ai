@@ -29,13 +29,31 @@ export function LoginForm({ onSuccess, onSwitchToSignUp }: LoginFormProps) {
       return
     }
 
+    if (password.length < 8) {
+      setError('Password must be at least 8 characters')
+      return
+    }
+
     setIsLoading(true)
 
     try {
       await signIn({ email, password })
       onSuccess?.()
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Sign in failed')
+      // Provide user-friendly error messages
+      const errorMessage = err instanceof Error ? err.message : 'Sign in failed'
+      
+      if (errorMessage.includes('UserNotFoundException') || errorMessage.includes('NotAuthorizedException')) {
+        setError('Invalid email or password. Please check your credentials and try again.')
+      } else if (errorMessage.includes('UserNotConfirmedException')) {
+        setError('Please verify your email address before signing in. Check your inbox for the verification code.')
+      } else if (errorMessage.includes('TooManyRequestsException')) {
+        setError('Too many login attempts. Please wait a few minutes and try again.')
+      } else if (errorMessage.includes('Network')) {
+        setError('Network error. Please check your internet connection and try again.')
+      } else {
+        setError(errorMessage)
+      }
     } finally {
       setIsLoading(false)
     }
